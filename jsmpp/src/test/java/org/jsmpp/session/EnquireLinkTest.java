@@ -36,7 +36,7 @@ public class EnquireLinkTest {
     smppServer.setEnquireLinkTimer(0);
     executorService.execute(smppServer);
 
-    SMPPSession session = new SMPPSession();
+    SMPPSession session = new SMPPSession(null, 1);
     session.setInterfaceVersion(InterfaceVersion.IF_33);
     session.setEnquireLinkTimer(100);
     session.connect("localhost", PORT);
@@ -53,7 +53,7 @@ public class EnquireLinkTest {
     smppServer.setEnquireLinkTimer(0);
     executorService.execute(smppServer);
 
-    SMPPSession session = new SMPPSession();
+    SMPPSession session = new SMPPSession(null, 1);
     session.setInterfaceVersion(InterfaceVersion.IF_34);
     session.setEnquireLinkTimer(100);
     session.connect("localhost", PORT);
@@ -70,7 +70,7 @@ public class EnquireLinkTest {
     smppServer.setEnquireLinkTimer(0);
     executorService.execute(smppServer);
 
-    SMPPSession session = new SMPPSession();
+    SMPPSession session = new SMPPSession(null, 1);
     session.setInterfaceVersion(InterfaceVersion.IF_50);
     session.setEnquireLinkTimer(100);
     session.connect("localhost", PORT);

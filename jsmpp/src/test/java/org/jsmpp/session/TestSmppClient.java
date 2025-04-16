@@ -78,7 +78,7 @@ public class TestSmppClient implements Runnable, MessageReceiverListener {
   @Override
   public void run() {
     try {
-      SMPPSession session = new SMPPSession();
+      SMPPSession session = new SMPPSession(null, 1);
       session.setPduProcessorDegree(processorDegree);
       session.setEnquireLinkTimer(enquireLinkTimer);
       session.setMessageReceiverListener(this);

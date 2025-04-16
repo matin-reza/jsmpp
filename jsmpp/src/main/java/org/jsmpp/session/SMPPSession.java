@@ -35,26 +35,8 @@ import org.jsmpp.PDUSender;
 import org.jsmpp.PDUStringException;
 import org.jsmpp.SMPPConstant;
 import org.jsmpp.SynchronizedPDUSender;
-import org.jsmpp.bean.Address;
-import org.jsmpp.bean.AlertNotification;
-import org.jsmpp.bean.BindResp;
-import org.jsmpp.bean.BindType;
-import org.jsmpp.bean.Command;
-import org.jsmpp.bean.DataCoding;
-import org.jsmpp.bean.DataSm;
-import org.jsmpp.bean.DeliverSm;
-import org.jsmpp.bean.ESMClass;
-import org.jsmpp.bean.EnquireLink;
-import org.jsmpp.bean.InterfaceVersion;
-import org.jsmpp.bean.NumberingPlanIndicator;
-import org.jsmpp.bean.OptionalParameter;
+import org.jsmpp.bean.*;
 import org.jsmpp.bean.OptionalParameter.Sc_interface_version;
-import org.jsmpp.bean.QuerySmResp;
-import org.jsmpp.bean.RegisteredDelivery;
-import org.jsmpp.bean.ReplaceIfPresentFlag;
-import org.jsmpp.bean.SubmitMultiResp;
-import org.jsmpp.bean.SubmitSmResp;
-import org.jsmpp.bean.TypeOfNumber;
 import org.jsmpp.extra.NegativeResponseException;
 import org.jsmpp.extra.PendingResponse;
 import org.jsmpp.extra.ProcessRequestException;
@@ -116,34 +98,34 @@ public class SMPPSession extends AbstractSession implements ClientSession {
      *
      * @see #connectAndBind(String, int, BindType, String, String, String, TypeOfNumber, NumberingPlanIndicator, String)
      */
-    public SMPPSession() {
+    public SMPPSession(PDUCallBack pduCallBack, Integer window) {
         this(new SynchronizedPDUSender(new DefaultPDUSender(new DefaultComposer())),
                 new DefaultPDUReader(),
-                SocketConnectionFactory.getInstance());
+                SocketConnectionFactory.getInstance(), pduCallBack, window);
     }
 
-    public SMPPSession(ConnectionFactory connFactory) {
+    public SMPPSession(ConnectionFactory connFactory, PDUCallBack pduCallBack) {
         this(new SynchronizedPDUSender(new DefaultPDUSender(new DefaultComposer())),
                 new DefaultPDUReader(),
-                connFactory);
+                connFactory, pduCallBack, 1);
     }
 
     public SMPPSession(PDUSender pduSender, PDUReader pduReader,
-                       ConnectionFactory connFactory) {
-        super(pduSender);
+                       ConnectionFactory connFactory, PDUCallBack pduCallBack, Integer window) {
+        super(pduSender, pduCallBack, window);
         this.pduReader = pduReader;
         this.connFactory = connFactory;
     }
 
     public SMPPSession(String host, int port, BindParameter bindParam,
                        PDUSender pduSender, PDUReader pduReader,
-                       ConnectionFactory connFactory) throws IOException {
-        this(pduSender, pduReader, connFactory);
+                       ConnectionFactory connFactory, PDUCallBack pduCallBack) throws IOException {
+        this(pduSender, pduReader, connFactory, pduCallBack, 1);
         connectAndBind(host, port, bindParam);
     }
 
-    public SMPPSession(String host, int port, BindParameter bindParam) throws IOException {
-        this();
+    public SMPPSession(String host, int port, BindParameter bindParam, PDUCallBack pduCallBack) throws IOException {
+        this(pduCallBack, 1);
         connectAndBind(host, port, bindParam);
     }
 

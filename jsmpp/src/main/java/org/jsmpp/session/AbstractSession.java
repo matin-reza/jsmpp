@@ -21,23 +21,15 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jsmpp.InvalidResponseException;
 import org.jsmpp.PDUException;
 import org.jsmpp.PDUSender;
 import org.jsmpp.SMPPConstant;
-import org.jsmpp.bean.Command;
-import org.jsmpp.bean.DataCoding;
-import org.jsmpp.bean.DataSm;
-import org.jsmpp.bean.DataSmResp;
-import org.jsmpp.bean.ESMClass;
-import org.jsmpp.bean.EnquireLink;
-import org.jsmpp.bean.InterfaceVersion;
-import org.jsmpp.bean.NumberingPlanIndicator;
-import org.jsmpp.bean.OptionalParameter;
-import org.jsmpp.bean.RegisteredDelivery;
-import org.jsmpp.bean.TypeOfNumber;
+import org.jsmpp.bean.*;
 import org.jsmpp.extra.NegativeResponseException;
 import org.jsmpp.extra.PendingResponse;
 import org.jsmpp.extra.ProcessRequestException;
@@ -57,7 +49,6 @@ public abstract class AbstractSession implements Session, Closeable {
     private static final Random random = new Random();
 
     private final Map<Integer, PendingResponse<Command>> pendingResponses = new ConcurrentHashMap<>();
-    private final Map<Long, PendingResponse<Command>> pendingResponsesCustom = new ConcurrentHashMap<>();
     private final Sequence sequence = new Sequence(1);
     private final PDUSender pduSender;
     private int pduProcessorDegree = 3;
@@ -66,11 +57,15 @@ public abstract class AbstractSession implements Session, Closeable {
     private final String sessionId = generateSessionId();
     private int enquireLinkTimer = 60000;
     private long transactionTimer = 2000;
-
     protected EnquireLinkSender enquireLinkSender;
 
-    protected AbstractSession(PDUSender pduSender) {
+    private final Integer window;
+    private final ExecutorService callBackMessageExecutor = Executors.newFixedThreadPool(700);
+
+    protected AbstractSession(PDUSender pduSender, PDUCallBack pduCallBack, Integer window) {
         this.pduSender = pduSender;
+        this.callBack = pduCallBack;
+        this.window = window;
     }
 
     protected abstract AbstractSessionContext sessionContext();
@@ -90,6 +85,8 @@ public abstract class AbstractSession implements Session, Closeable {
     protected PendingResponse<Command> removePendingResponse(int sequenceNumber) {
         return pendingResponses.remove(sequenceNumber);
     }
+
+    protected PDUCallBack callBack;
 
     @Override
     public String getSessionId() {
@@ -331,7 +328,9 @@ public abstract class AbstractSession implements Session, Closeable {
         pendingResponses.put(seqNum, pendingResp);
         if (task instanceof SubmitSmCommandTask) {
             SubmitSmCommandTask submitSmCommandTask = (SubmitSmCommandTask) task;
-            pendingResponsesCustom.put(submitSmCommandTask.getReferenceId(), pendingResp);
+            callBackMessageExecutor.submit(() -> {
+                callBack.listen(submitSmCommandTask.getReferenceId(), pendingResp);
+            });
         }
         try {
             task.executeTask(connection().getOutputStream(), seqNum);
@@ -348,7 +347,7 @@ public abstract class AbstractSession implements Session, Closeable {
         }
 
         try {
-            if (!(task instanceof SubmitSmCommandTask) || pendingResponses.size() > 500)
+            if (!(task instanceof SubmitSmCommandTask) || pendingResponses.size() > window)
                 pendingResp.waitDone();
             if (COMMAND_NAME_ENQUIRE_LINK.equals(task.getCommandName())) {
                 if (log.isTraceEnabled()) {
