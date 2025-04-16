@@ -94,7 +94,7 @@ public class SMPPOutboundServerSession extends AbstractSession implements Outbou
                                      GenericMessageReceiverListener messageReceiverListener,
                                      OutboundServerMessageReceiverListener outboundServerMessageReceiverListener,
                                      int pduProcessorDegree, PDUSender pduSender, PDUReader pduReader) {
-        super(pduSender, null, 1);
+        super(pduSender);
         this.conn = conn;
         this.messageReceiverListener = messageReceiverListener;
         this.outboundServerMessageReceiverListener = outboundServerMessageReceiverListener;

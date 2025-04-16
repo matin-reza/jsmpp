@@ -20,10 +20,10 @@ import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jsmpp.DefaultPDUReader;
 import org.jsmpp.DefaultPDUSender;
@@ -85,6 +85,7 @@ public class SMPPSession extends AbstractSession implements ClientSession {
     /* Connection */
     private final ConnectionFactory connFactory;
     private final ResponseHandler responseHandler = new ResponseHandlerImpl();
+    private final PDUCallBack pduCallBack;
     private Connection conn;
     private DataInputStream in;
     private OutputStream out;
@@ -92,6 +93,11 @@ public class SMPPSession extends AbstractSession implements ClientSession {
     private MessageReceiverListener messageReceiverListener;
     private BoundSessionStateListener sessionStateListener = new BoundSessionStateListener();
     private SMPPSessionContext sessionContext = new SMPPSessionContext(this, sessionStateListener);
+    private final Integer window;
+    private final ExecutorService callBackMessageExecutor = Executors.newFixedThreadPool(700);
+
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
 
     /**
      * Default constructor of {@link SMPPSession}. The next action might be, connect and bind to a destination message center.
@@ -112,9 +118,11 @@ public class SMPPSession extends AbstractSession implements ClientSession {
 
     public SMPPSession(PDUSender pduSender, PDUReader pduReader,
                        ConnectionFactory connFactory, PDUCallBack pduCallBack, Integer window) {
-        super(pduSender, pduCallBack, window);
+        super(pduSender);
         this.pduReader = pduReader;
         this.connFactory = connFactory;
+        this.window = window;
+        this.pduCallBack = pduCallBack;
     }
 
     public SMPPSession(String host, int port, BindParameter bindParam,
@@ -357,11 +365,33 @@ public class SMPPSession extends AbstractSession implements ClientSession {
                 sourceAddr, destAddrTon, destAddrNpi, destinationAddr,
                 esmClass, protocolId, priorityFlag, scheduleDeliveryTime,
                 validityPeriod, registeredDelivery, replaceIfPresentFlag,
-                dataCoding, smDefaultMsgId, shortMessage, referenceId, optionalParameters);
+                dataCoding, smDefaultMsgId, shortMessage, optionalParameters);
 
-        SubmitSmResp resp = (SubmitSmResp) executeSendCommand(submitSmTask, getTransactionTimer());
-
-        return new SubmitSmResult(resp.getMessageId(), resp.getOptionalParameters());
+        lock.lock();
+        try {
+            if (getUnacknowledgedRequests() > window) {
+                try {
+                    System.out.println("sleep:" + Thread.currentThread().getId());
+                    condition.await();
+                    System.out.println("wakeup:" + Thread.currentThread().getId());
+                } catch (InterruptedException e) {
+                    throw new IOException();
+                }
+            }
+            callBackMessageExecutor.submit(() -> {
+                try {
+                    SubmitSmResp resp = (SubmitSmResp) executeSendCommand(submitSmTask, getTransactionTimer());
+                    pduCallBack.listen(referenceId, resp.getMessageId());
+                } catch (PDUException | ResponseTimeoutException | InvalidResponseException |
+                         NegativeResponseException |
+                         IOException e) {
+                    pduCallBack.listen(referenceId, null);
+                }
+            });
+            return null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     /* (non-Javadoc)
@@ -578,7 +608,13 @@ public class SMPPSession extends AbstractSession implements ClientSession {
 
         @Override
         public PendingResponse<Command> removeSentItem(int sequenceNumber) {
-            return removePendingResponse(sequenceNumber);
+            lock.lock();
+            try {
+                condition.signal();
+                return removePendingResponse(sequenceNumber);
+            } finally {
+                lock.unlock();
+            }
         }
 
         @Override

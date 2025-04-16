@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jsmpp.InvalidResponseException;
@@ -47,25 +45,18 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractSession implements Session, Closeable {
     private static final Logger log = LoggerFactory.getLogger(AbstractSession.class);
     private static final Random random = new Random();
-
     private final Map<Integer, PendingResponse<Command>> pendingResponses = new ConcurrentHashMap<>();
     private final Sequence sequence = new Sequence(1);
     private final PDUSender pduSender;
     private int pduProcessorDegree = 3;
     private int queueCapacity = 100;
-
     private final String sessionId = generateSessionId();
     private int enquireLinkTimer = 60000;
     private long transactionTimer = 2000;
     protected EnquireLinkSender enquireLinkSender;
 
-    private final Integer window;
-    private final ExecutorService callBackMessageExecutor = Executors.newFixedThreadPool(700);
-
-    protected AbstractSession(PDUSender pduSender, PDUCallBack pduCallBack, Integer window) {
+    protected AbstractSession(PDUSender pduSender) {
         this.pduSender = pduSender;
-        this.callBack = pduCallBack;
-        this.window = window;
     }
 
     protected abstract AbstractSessionContext sessionContext();
@@ -85,8 +76,6 @@ public abstract class AbstractSession implements Session, Closeable {
     protected PendingResponse<Command> removePendingResponse(int sequenceNumber) {
         return pendingResponses.remove(sequenceNumber);
     }
-
-    protected PDUCallBack callBack;
 
     @Override
     public String getSessionId() {
@@ -326,12 +315,6 @@ public abstract class AbstractSession implements Session, Closeable {
         int seqNum = sequence.nextValue();
         PendingResponse<Command> pendingResp = new PendingResponse<>(timeout);
         pendingResponses.put(seqNum, pendingResp);
-        if (task instanceof SubmitSmCommandTask) {
-            SubmitSmCommandTask submitSmCommandTask = (SubmitSmCommandTask) task;
-            callBackMessageExecutor.submit(() -> {
-                callBack.listen(submitSmCommandTask.getReferenceId(), pendingResp);
-            });
-        }
         try {
             task.executeTask(connection().getOutputStream(), seqNum);
         } catch (IOException e) {
@@ -347,8 +330,7 @@ public abstract class AbstractSession implements Session, Closeable {
         }
 
         try {
-            if (!(task instanceof SubmitSmCommandTask) || pendingResponses.size() > window)
-                pendingResp.waitDone();
+            pendingResp.waitDone();
             if (COMMAND_NAME_ENQUIRE_LINK.equals(task.getCommandName())) {
                 if (log.isTraceEnabled()) {
                     log.trace("{} response with sequence_number {} received for session {}", task.getCommandName(), seqNum, sessionId);
@@ -368,8 +350,7 @@ public abstract class AbstractSession implements Session, Closeable {
         }
 
         Command resp = pendingResp.getResponse();
-        if (!(task instanceof SubmitSmCommandTask))
-            validateResponse(resp);
+        validateResponse(resp);
         return resp;
     }
 

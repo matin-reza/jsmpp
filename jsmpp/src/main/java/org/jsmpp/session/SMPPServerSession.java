@@ -104,7 +104,7 @@ public class SMPPServerSession extends AbstractSession implements ServerSession 
                              ServerMessageReceiverListener messageReceiverListener,
                              ServerResponseDeliveryListener responseDeliveryListener,
                              int pduProcessorDegree, int queueCapacity, PDUSender pduSender, PDUReader pduReader) {
-        super(pduSender, null, 1);
+        super(pduSender);
         this.conn = conn;
         this.messageReceiverListener = messageReceiverListener;
         this.responseDeliveryListener = responseDeliveryListener;

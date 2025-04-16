@@ -113,7 +113,7 @@ public class SMPPOutboundSession extends AbstractSession implements OutboundClie
 
     public SMPPOutboundSession(PDUSender pduSender, PDUReader pduReader,
                                ConnectionFactory connFactory) {
-        super(pduSender, null, 1);
+        super(pduSender);
         this.pduReader = pduReader;
         this.connFactory = connFactory;
     }

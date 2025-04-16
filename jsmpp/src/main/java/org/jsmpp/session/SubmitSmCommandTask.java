@@ -49,7 +49,6 @@ public class SubmitSmCommandTask extends AbstractSendCommandTask {
     private final byte smDefaultMsgId;
     private final byte[] shortMessage;
     private final OptionalParameter[] optionalParameters;
-    private final Long referenceId;
 
     public SubmitSmCommandTask(PDUSender pduSender, String serviceType,
                                TypeOfNumber sourceAddrTon, NumberingPlanIndicator sourceAddrNpi,
@@ -59,7 +58,6 @@ public class SubmitSmCommandTask extends AbstractSendCommandTask {
                                String scheduleDeliveryTime, String validityPeriod,
                                RegisteredDelivery registeredDelivery, byte replaceIfPresentFlag,
                                DataCoding dataCoding, byte smDefaultMsgId, byte[] shortMessage,
-                               Long referenceId,
                                OptionalParameter... optionalParameters) {
 
         super(pduSender);
@@ -80,7 +78,6 @@ public class SubmitSmCommandTask extends AbstractSendCommandTask {
         this.dataCoding = dataCoding;
         this.smDefaultMsgId = smDefaultMsgId;
         this.shortMessage = shortMessage;
-        this.referenceId = referenceId;
         this.optionalParameters = optionalParameters;
     }
 
@@ -96,9 +93,5 @@ public class SubmitSmCommandTask extends AbstractSendCommandTask {
 
     public String getCommandName() {
         return COMMAND_NAME_SUBMIT_SM;
-    }
-
-    public Long getReferenceId() {
-        return referenceId;
     }
 }
