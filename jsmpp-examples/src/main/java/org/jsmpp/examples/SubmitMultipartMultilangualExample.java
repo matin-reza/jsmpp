@@ -155,7 +155,7 @@ public class SubmitMultipartMultilangualExample {
       SubmitSmResult submitSmResult = session.submitShortMessage("CMT", TypeOfNumber.UNKNOWN, NumberingPlanIndicator.UNKNOWN,
           sourceMsisdn, TypeOfNumber.UNKNOWN, NumberingPlanIndicator.UNKNOWN, destinationMsisdn, esmClass,
           (byte) 0, (byte) 1, null, null, new RegisteredDelivery(SMSCDeliveryReceipt.SUCCESS_FAILURE),
-          (byte) 0, dataCoding, (byte) 0, message);
+          (byte) 0, dataCoding, (byte) 0, message, null);
       messageId = submitSmResult.getMessageId();
     } catch (PDUException e) {
       // Invalid PDU parameter

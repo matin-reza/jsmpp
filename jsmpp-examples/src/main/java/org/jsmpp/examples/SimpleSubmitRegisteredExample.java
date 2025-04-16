@@ -58,7 +58,7 @@ public class SimpleSubmitRegisteredExample {
                     TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616",
                     TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657",
                     new ESMClass(), (byte)0, (byte)1,  TIME_FORMATTER.format(new Date()), null,
-                    new RegisteredDelivery(SMSCDeliveryReceipt.SUCCESS_FAILURE), (byte)0, DataCodings.ZERO, (byte)0, "jSMPP simplify SMPP on Java platform".getBytes());
+                    new RegisteredDelivery(SMSCDeliveryReceipt.SUCCESS_FAILURE), (byte)0, DataCodings.ZERO, (byte)0, "jSMPP simplify SMPP on Java platform".getBytes(), null);
 
                 String messageId = submitSmResult.getMessageId();
                 /*

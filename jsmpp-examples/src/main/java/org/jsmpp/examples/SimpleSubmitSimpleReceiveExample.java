@@ -107,7 +107,7 @@ public class SimpleSubmitSimpleReceiveExample {
                     NumberingPlanIndicator.UNKNOWN, "1616", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN,
                     "628176504657", new ESMClass(), (byte)0, (byte)1, TIME_FORMATTER.format(new Date()), null,
                     registeredDelivery, (byte)0, new GeneralDataCoding(Alphabet.ALPHA_DEFAULT, MessageClass.CLASS1,
-                        false), (byte)0, message.getBytes());
+                        false), (byte)0, message.getBytes(), null);
 
                 String messageId = submitSmResult.getMessageId();
                 log.info("Message submitted, message_id is {}", messageId);

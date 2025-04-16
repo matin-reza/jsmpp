@@ -118,7 +118,7 @@ public class AsyncSubmitReceiveDeliverSmExample {
                 public void run() {
                     try {
                         SubmitSmResult submitSmResult = session.submitShortMessage("CMT", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657", new ESMClass(), (byte)0, (byte)1,  TIME_FORMATTER
-                            .format(new Date()), null, registeredDelivery, (byte)0, DataCodings.ZERO, (byte)0, "jSMPP simplify SMPP on Java platform".getBytes());
+                            .format(new Date()), null, registeredDelivery, (byte)0, DataCodings.ZERO, (byte)0, "jSMPP simplify SMPP on Java platform".getBytes(), null);
                         String messageId = submitSmResult.getMessageId();
                         log.info("Message submitted, message_id is {}", messageId);
                     } catch (PDUException e) {

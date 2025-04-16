@@ -40,12 +40,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author uudashr
- *
  */
 public class SimpleSubmitExample {
     private static final Logger log = LoggerFactory.getLogger(SimpleSubmitExample.class);
     private static final TimeFormatter TIME_FORMATTER = new AbsoluteTimeFormatter();
-    
+
     public static void main(String[] args) {
         SMPPSession session = new SMPPSession();
         try {
@@ -55,11 +54,11 @@ public class SimpleSubmitExample {
 
             try {
                 SubmitSmResult submitSmResult = session.submitShortMessage("CMT",
-                    TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616",
-                    TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657",
-                    new ESMClass(), (byte)0, (byte)1,  TIME_FORMATTER.format(new Date()), null,
-                    new RegisteredDelivery(SMSCDeliveryReceipt.DEFAULT), (byte)0, new GeneralDataCoding(Alphabet.ALPHA_DEFAULT, MessageClass.CLASS1, false), (byte)0,
-                    "jSMPP simplify SMPP on Java platform".getBytes());
+                        TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616",
+                        TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657",
+                        new ESMClass(), (byte) 0, (byte) 1, TIME_FORMATTER.format(new Date()), null,
+                        new RegisteredDelivery(SMSCDeliveryReceipt.DEFAULT), (byte) 0, new GeneralDataCoding(Alphabet.ALPHA_DEFAULT, MessageClass.CLASS1, false), (byte) 0,
+                        "jSMPP simplify SMPP on Java platform".getBytes(), null);
                 String messageId = submitSmResult.getMessageId();
                 log.info("Message submitted, message_id is {}", messageId);
             } catch (PDUException e) {

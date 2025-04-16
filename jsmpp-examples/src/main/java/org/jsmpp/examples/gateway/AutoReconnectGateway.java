@@ -101,7 +101,7 @@ public class AutoReconnectGateway implements Gateway {
         sourceAddrNpi, sourceAddr, destAddrTon, destAddrNpi,
         destinationAddr, esmClass, protocolId, priorityFlag,
         scheduleDeliveryTime, validityPeriod, registeredDelivery,
-        replaceIfPresentFlag, dataCoding, smDefaultMsgId, shortMessage,
+        replaceIfPresentFlag, dataCoding, smDefaultMsgId, shortMessage, null,
         optionalParameters).getMessageId();
   }
 

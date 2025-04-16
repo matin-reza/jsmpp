@@ -74,7 +74,7 @@ public class SubmitLongMessageExample {
         String messageId = null;
         try {
             SubmitSmResult submitSmResult = session.submitShortMessage("CMT", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657", new ESMClass(), (byte)0, (byte)1,  TIME_FORMATTER
-                .format(new Date()), null, new RegisteredDelivery(SMSCDeliveryReceipt.DEFAULT), (byte)0, DataCodings.ZERO, (byte)0, message.getBytes(), sarMsgRefNum, sarSegmentSeqnum, sarTotalSegments);
+                .format(new Date()), null, new RegisteredDelivery(SMSCDeliveryReceipt.DEFAULT), (byte)0, DataCodings.ZERO, (byte)0, message.getBytes(), null, sarMsgRefNum, sarSegmentSeqnum, sarTotalSegments);
             messageId = submitSmResult.getMessageId();
         } catch (PDUException e) {
             // Invalid PDU parameter

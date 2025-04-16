@@ -217,7 +217,7 @@ public class StressClient implements Runnable {
               null, null, new RegisteredDelivery(0),
               (byte) 0,
               DataCodings.ZERO,
-              (byte) 0, message.getBytes());
+              (byte) 0, message.getBytes(), null);
           log.info("There are {} unacknowledged requests", smppSession.getUnacknowledgedRequests());
 
           OptionalParameter.Congestion_state congestionState = OptionalParameters.get(OptionalParameter.Congestion_state.class,
