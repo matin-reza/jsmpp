@@ -2,26 +2,25 @@
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.bean;
 
-import static org.testng.AssertJUnit.assertFalse;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
+import static org.testng.AssertJUnit.assertFalse;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 
 import org.jsmpp.bean.OptionalParameter.COctetString;
 import org.jsmpp.bean.OptionalParameter.Callback_num_pres_ind.Presentation_Indicator;
@@ -39,6 +38,7 @@ import org.testng.annotations.Test;
  * 
  * @author mikko.koponen
  * @author uudashr
+ * @author pmoerenhout
  *
  */
 public class OptionalParameterTest {
@@ -149,10 +149,44 @@ public class OptionalParameterTest {
 		
 	}
 
-    @Test(groups="checkintest")
-    public void cOctetStringGetValueAsString() throws UnsupportedEncodingException {
-        COctetString string = new OptionalParameter.COctetString(Tag.ADDITIONAL_STATUS_INFO_TEXT.code(), "urgent");
+  @Test(groups="checkintest")
+  public void cOctetStringGetValueAsString() throws UnsupportedEncodingException {
+    COctetString string = new OptionalParameter.COctetString(Tag.ADDITIONAL_STATUS_INFO_TEXT.code(), "urgent");
 
-        assertEquals(string.getValueAsString(), "urgent");
-    }
+    assertEquals(string.getValueAsString(), "urgent");
+
+		assertEquals((byte)0x75, string.getValue()[0]); // u
+		assertEquals((byte)0x72, string.getValue()[1]); // r
+		assertEquals((byte)0x67, string.getValue()[2]); // g
+		assertEquals((byte)0x65, string.getValue()[3]); // e
+		assertEquals((byte)0x6e, string.getValue()[4]); // n
+		assertEquals((byte)0x74, string.getValue()[5]); // t
+		assertEquals((byte)0x00, string.getValue()[6]); // NULL
+  }
+
+  @Test
+  public void testAdditionalStatusInfoTextStringAsString() {
+    COctetString op = new OptionalParameter.Additional_status_info_text("additional text");
+    assertEquals("additional text", op.getValueAsString());
+  }
+
+  @Test
+  public void testAdditionalStatusInfoTextBytesAsString() {
+    byte[] content = "more additional text\0".getBytes();
+    COctetString op = new OptionalParameter.Additional_status_info_text(content);
+    assertEquals("more additional text", op.getValueAsString());
+  }
+
+  @Test
+  public void testReceiptedMessageId() {
+    byte[] content = "123456\0".getBytes();
+    OptionalParameter.Receipted_message_id op = new OptionalParameter.Receipted_message_id(content);
+    assertEquals("123456", op.getValueAsString());
+  }
+
+  @Test
+  public void testCongestionState() {
+    OptionalParameter.Congestion_state op = new OptionalParameter.Congestion_state((byte)80);
+    assertEquals(80, op.getValue() & 0xff);
+  }
 }

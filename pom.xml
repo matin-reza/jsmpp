@@ -4,8 +4,20 @@
 
     <groupId>org.jsmpp</groupId>
     <artifactId>jsmpp-pom</artifactId>
-    <version>2.2.0-SNAPSHOT</version>
+    <version>3.0.1</version>
     <packaging>pom</packaging>
+
+    <name>jSMPP - Parent</name>
+    <description>SMPP library for Java</description>
+    <url>https://jsmpp.org</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <modules>
         <module>jsmpp</module>
@@ -19,21 +31,47 @@
         <developer>
             <name>Nuruddin Ashr</name>
         </developer>
+        <developer>
+            <name>Daniel Pocock</name>
+            <email>daniel@pocock.pro</email>
+            <url>https://danielpocock.com</url>
+        </developer>
+        <developer>
+            <name>Pim Moerenhout</name>
+            <email>pim.moerenhout@gmail.com</email>
+        </developer>
     </developers>
 
     <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <slf4j.version>1.6.1</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <junit.version>4.13.2</junit.version>
+        <testng.version>6.14.3</testng.version>
+        <telecom-charsets.version>1.0.1</telecom-charsets.version>
+        <commons-codec.version>1.16.0</commons-codec.version>
         <git.properties>git.properties</git.properties>
+
+        <maven-bundle-plugin.version>5.1.9</maven-bundle-plugin.version>
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
+        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <maven-wagon.version>3.5.3</maven-wagon.version>
+        <git-commit-id-plugin.version>3.0.1</git-commit-id-plugin.version>
+        <properties-maven-plugin.version>1.0.0</properties-maven-plugin.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.8.2</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -46,62 +84,50 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.testng</groupId>
-                <artifactId>testng</artifactId>
-                <version>5.14.10</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.4</version>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.brake.threegpp</groupId>
+                <artifactId>telecom-charsets</artifactId>
+                <version>${telecom-charsets.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.16</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>9</version>
+    </parent>
 
     <build>
         <extensions>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-ssh</artifactId>
-                <version>2.0</version>
+                <version>${maven-wagon.version}</version>
             </extension>
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-ssh-external</artifactId>
-                <version>2.0</version>
+                <version>${maven-wagon.version}</version>
             </extension>
         </extensions>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                    <encoding>utf-8</encoding>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
@@ -111,12 +137,22 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.1</version>
+                    <version>${maven-release-plugin.version}</version>
+                </plugin>
+                <plugin>
+                  <groupId>org.apache.felix</groupId>
+                  <artifactId>maven-bundle-plugin</artifactId>
+                  <version>${maven-bundle-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.1.2</version>
+                    <version>${maven-source-plugin.version}</version>
                     <executions>
                         <execution>
                             <phase>verify</phase>
@@ -129,7 +165,7 @@
                 <plugin>
                     <groupId>pl.project13.maven</groupId>
                     <artifactId>git-commit-id-plugin</artifactId>
-                    <version>1.9</version>
+                    <version>${git-commit-id-plugin.version}</version>
                     <executions>
                         <execution>
                             <phase>initialize</phase>
@@ -138,7 +174,6 @@
                             </goals>
                         </execution>
                     </executions>
-
                     <configuration>
                         <!-- that's the default value, you don't have to set it -->
                         <prefix>git</prefix>
@@ -154,12 +189,11 @@
                         <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
                         <generateGitPropertiesFilename>${git.properties}</generateGitPropertiesFilename>
                     </configuration>
-
                 </plugin>
-                <plugin>
+                <!--<plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>properties-maven-plugin</artifactId>
-                    <version>1.0-alpha-2</version>
+                    <version>${properties-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <phase>initialize</phase>
@@ -173,10 +207,10 @@
                             </configuration>
                         </execution>
                     </executions>
-                </plugin>
+                </plugin>-->
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.3.2</version>
+                    <version>${maven-jar-plugin.version}</version>
                     <configuration>
                         <archive>
                             <manifest>
@@ -194,9 +228,40 @@
         </pluginManagement>
     </build>
 
+    <profiles>
+        <profile>
+            <id>release-sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <scm>
-        <connection>scm:git:ssh://git@github.com:uudashr/jsmpp.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:kostousov-ds/jsmpp.git</developerConnection>
+        <url>https://github.com/opentelecoms-org/jsmpp</url>
+        <connection>scm:git:ssh://git@github.com:opentelecoms-org/jsmpp.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:opentelecoms-org/jsmpp.git</developerConnection>
     </scm>
 
 </project>

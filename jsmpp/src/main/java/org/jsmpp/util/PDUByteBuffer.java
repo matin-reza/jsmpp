@@ -1,16 +1,16 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.util;
 
@@ -18,7 +18,7 @@ import org.jsmpp.bean.OptionalParameter;
 
 
 /**
- * Utility to compose the PDU bytes. The size of the buffer is depends to the
+ * Utility to compose the PDU bytes. The size of the buffer depends on the
  * entities appended to the buffer.
  * 
  * @author uudashr
@@ -27,7 +27,7 @@ import org.jsmpp.bean.OptionalParameter;
  * 
  */
 public class PDUByteBuffer {
-    private static CapacityPolicy DEFAULT_CAPACITY_POLICY = new SimpleCapacityPolicy();
+    private static final CapacityPolicy DEFAULT_CAPACITY_POLICY = new SimpleCapacityPolicy();
     private CapacityPolicy capacityPolicy;
     private byte[] bytes;
     private int bytesLength;
@@ -136,11 +136,10 @@ public class PDUByteBuffer {
     }
 
     /**
-     * Append <tt>String</tt> value.
+     * Append {@code String} value and optionally append a null byte.
      * 
-     * @param stringValue
-     * @param nullTerminated <tt>true<tt> means C-Octet String. 
-     *      The default value is <tt>true</tt>.
+     * @param stringValue The {@code String} value to append.
+     * @param nullTerminated {@code true} means C-Octet String. The default value is {@code true}.
      * @return the latest length of the buffer.
      */
     public int append(String stringValue, boolean nullTerminated) {
@@ -164,7 +163,7 @@ public class PDUByteBuffer {
     /**
      * Append an optional parameter.
      * 
-     * @param optionalParameter is the optional parameter.
+     * @param optionalParameter The optional parameters.
      * @return the latest length of the buffer.
      */
     public int append(OptionalParameter optionalParameter) {
@@ -174,7 +173,7 @@ public class PDUByteBuffer {
     /**
      * Append all optional parameters.
      * 
-     * @param optionalParameters is the optional parameters.
+     * @param optionalParameters The optional parameters.
      * @return the latest length of the buffer.
      */
     public int appendAll(OptionalParameter[] optionalParameters) {

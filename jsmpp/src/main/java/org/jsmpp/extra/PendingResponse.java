@@ -28,16 +28,16 @@ public class PendingResponse<T extends Command> {
     /**
      * Construct with specified timeout.
      * 
-     * @param timeout is the timeout in millisecond.
+     * @param timeout the timeout in milliseconds.
      */
     public PendingResponse(long timeout) {
         this.timeout = timeout;
     }
 
     /**
-     * Check whether if we already receive response.
+     * Check whether if we already received the response.
      * 
-     * @return <tt>true</tt> if response already receive.
+     * @return {@code true} if the response is already received.
      */
     private boolean isDoneResponse() {
         return response != null;
@@ -93,10 +93,10 @@ public class PendingResponse<T extends Command> {
     }
 
     /**
-     * Wait until response receive or timeout already reach.
+     * Wait until response received or timeout already reached.
      * 
-     * @throws ResponseTimeoutException if timeout reach.
-     * @throws InvalidResponseException if receive invalid response.
+     * @throws ResponseTimeoutException if timeout reached.
+     * @throws InvalidResponseException if received invalid response.
      */
     public void waitDone() throws ResponseTimeoutException,
             InvalidResponseException {
@@ -106,6 +106,7 @@ public class PendingResponse<T extends Command> {
                 try {
                     condition.await(timeout, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
             }
             

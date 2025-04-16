@@ -18,6 +18,7 @@ import java.io.IOException;
 
 import org.jsmpp.bean.Command;
 import org.jsmpp.bean.DataSm;
+import org.jsmpp.bean.EnquireLink;
 import org.jsmpp.extra.PendingResponse;
 import org.jsmpp.extra.ProcessRequestException;
 
@@ -26,15 +27,15 @@ import org.jsmpp.extra.ProcessRequestException;
  *
  */
 public interface BaseResponseHandler {
-    
+
     /**
      * Remove the previously {@link PendingResponse} that set when the request
      * was sent.
      * 
      * @param sequenceNumber the sequence number of the request.
      * @return the {@link PendingResponse} correspond to specified
-     *         sequenceNumber. Return <tt>null</tt> if the the mapped
-     *         sequenceNumber not found
+     *         sequenceNumber. Return {@code null} if the the mapped
+     *         sequenceNumber is not found
      */
     PendingResponse<Command> removeSentItem(int sequenceNumber);
     
@@ -45,7 +46,7 @@ public interface BaseResponseHandler {
      * @param sequenceNumber is the sequence number original PDU if can be decoded.
      * @throws IOException if an IO error occur.
      */
-    void sendGenerickNack(int commandStatus, int sequenceNumber)
+    void sendGenericNack(int commandStatus, int sequenceNumber)
             throws IOException;
     /**
      * Response by sending negative response.
@@ -74,12 +75,14 @@ public interface BaseResponseHandler {
      * @throws IOException if an IO error occur.
      */
     void sendUnbindResp(int sequenceNumber) throws IOException;
+
+    void processEnquireLink(EnquireLink enquireLink);
     
     /**
      * Process the data short message.
      * 
      * @param dataSm is the data short message.
-     * @return the result for response.
+     * @return the result for data_sm_resp.
      * @throws ProcessRequestException if there is a failure when processing
      *         data_sm.
      */
@@ -93,7 +96,7 @@ public interface BaseResponseHandler {
      *        request.
      * @throws IOException if an IO error occur.
      */
-    public void sendDataSmResp(DataSmResult dataSmResult, int sequenceNumber) throws IOException;
+    void sendDataSmResp(DataSmResult dataSmResult, int sequenceNumber) throws IOException;
     
     /**
      * Notify for unbind.

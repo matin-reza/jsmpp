@@ -1,21 +1,23 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.bean;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import org.jsmpp.util.HexUtil;
 import org.jsmpp.util.OctetUtil;
@@ -26,7 +28,7 @@ import org.jsmpp.util.OctetUtil;
  * 
  * @author mikko.koponen
  * @author uudashr
- * 
+ * @author stefanth
  */
 public abstract class OptionalParameter {
 
@@ -36,9 +38,10 @@ public abstract class OptionalParameter {
         this.tag = tag;
     }
 
-    /** Convert the optional parameter into a byte serialized form conforming to the SMPP specification.
+    /**
+		 * Convert the optional parameter into a byte serialized form conforming to the SMPP specification.
      * 
-     * @return A byte array according to SMPP specification
+     * @return A byte array according to the SMPP specification
      */
     public byte[] serialize() {
         byte[] value = serializeValue();
@@ -49,15 +52,16 @@ public abstract class OptionalParameter {
         return buffer.array();
     }
 
-    /** This method should serialize the value part of the optional parameter. The format of the value is dependant
-     * on the specific optional parameter type so it is abstract and must be implmented by subclasses.
-     * @return
+    /**
+		 * This method should serialize the value part of the optional parameter. The format of the value is dependent
+     * on the specific optional parameter type so it is abstract and must be implemented by subclasses.
+		 *
+     * @return the serialized bytes
      */
     protected abstract byte[] serializeValue();
     
     /**
      * An optional parameter with an empty value field.
-     *
      */
     public static class Null extends OptionalParameter {
         public Null(short tag) {
@@ -76,16 +80,15 @@ public abstract class OptionalParameter {
 
     /**
      * An optional parameter containing two bytes representing a short integer.
-     *
      */
     public static class Short extends OptionalParameter {
         protected final short value;
 
         /**
          * Construct the Short optional parameter with specified short value.
-         * 
-         * @param tag
-         * @param value
+         *
+				 * @param tag is the tag.
+				 * @param value is the value.
          */
         public Short(short tag, short value) {
             super(tag);
@@ -119,15 +122,15 @@ public abstract class OptionalParameter {
         /**
          * Print Optional Parameter byte in hex format
          */
+        @Override
         public String toString()
         {
-            return HexUtil.conventBytesToHexString(OctetUtil.shortToBytes(value));
+            return HexUtil.convertBytesToHexString(OctetUtil.shortToBytes(value));
         }
     }
 
     /**
      * An optional parameter containing four bytes representing an int integer.
-     *
      */
     public static class Int extends OptionalParameter {
         protected final int value;
@@ -157,15 +160,15 @@ public abstract class OptionalParameter {
         /**
          * Print Optional Parameter byte in hex format
          */
+        @Override
         public String toString()
         {
-            return HexUtil.conventBytesToHexString(OctetUtil.intToBytes(value));
+            return HexUtil.convertBytesToHexString(OctetUtil.intToBytes(value));
         }
     }
 
     /**
      * An optional parameter containing one byte representing a byte integer.
-     *
      */
     public static class Byte extends OptionalParameter {
         protected final byte value;
@@ -195,15 +198,15 @@ public abstract class OptionalParameter {
         /**
          * Print Optional Parameter byte in hex format
          */
+        @Override
         public String toString()
         {
-            return HexUtil.conventBytesToHexString(new byte[] {getValue()});
+            return HexUtil.convertBytesToHexString(new byte[] {getValue()});
         }
     }
 
     /**
      * An optional parameter containing a series of octets, not necessarily NULL terminated.
-     *
      */
     public static class OctetString extends OptionalParameter {
         protected final byte[] value;
@@ -238,7 +241,7 @@ public abstract class OptionalParameter {
         public byte[] getValue() {
             return value;
         }
-        
+
         public String getValueAsString() {
             return new String(value);
         }
@@ -251,35 +254,41 @@ public abstract class OptionalParameter {
 
     /**
      * An optional parameter containing a series of ASCII characters terminated with the NULL character.
-     *
      */
     public static class COctetString extends OctetString {
 
-        public COctetString(short tag, String value, String charsetName)
-                throws UnsupportedEncodingException {
-            super(tag, value, charsetName);
-        }
+    	public COctetString(short tag, String value, String charsetName)
+				throws UnsupportedEncodingException {
+			super(tag, new byte[value.getBytes(charsetName).length + 1]);
+			byte[] bytes = value.getBytes(charsetName);
+			System.arraycopy(bytes, 0, this.value, 0, bytes.length);
+			this.value[bytes.length] = (byte) 0x00;
+		}
 
-        public COctetString(short tag, String value) {
-            super(tag, value);
-        }
-        
-        public COctetString(short tag, byte[] value) {
-            super(tag, value);
-        }
-        
-        @Override
-        public String getValueAsString() {
-            return new String(getValue());
-        }
-        
-    }
+		public COctetString(short tag, String value) {
+			super(tag, new byte[value.getBytes().length + 1]);
+			byte[] bytes = value.getBytes();
+			System.arraycopy(bytes, 0, this.value, 0, bytes.length);
+			this.value[bytes.length] = (byte) 0x00;
+		}
+
+		public COctetString(short tag, byte[] value) {
+			super(tag, value);
+		}
+
+		@Override
+		public String getValueAsString() {
+			byte[] s = new byte[value.length > 0 ? value.length - 1 : 0];
+			System.arraycopy(value, 0, s, 0, s.length);
+			return new String(s);
+		}
+  }
     
     /**
      * Represents valid values for the optional parameters dest_addr_subunit and source_addr_subunit.
      *
      */
-	public static enum Addr_subunit{
+	public enum Addr_subunit{
 		/**
 		 * 0x00 = Unknown (default)
 		 */
@@ -306,7 +315,8 @@ public abstract class OptionalParameter {
 		RESERVED(0x05);
 		
 		protected byte value;
-		private Addr_subunit(int value) {
+
+		Addr_subunit(int value) {
 			this.value = (byte)value;
 		}
 		
@@ -326,11 +336,9 @@ public abstract class OptionalParameter {
 	/**
 	 * The dest_addr_subunit parameter is used to route messages when received by a mobile station,
 	 * for example to a smart card in the mobile station or to an external device connected to the
-	 * mobile station. <br>
-	 * <br>
-	 * Wireless Network Technology: GSM
-	 * @author stefanth
+	 * mobile station.
 	 *
+	 * Wireless Network Technology: GSM
 	 */
 	public static class Dest_addr_subunit extends OptionalParameter.Byte {
 
@@ -348,12 +356,13 @@ public abstract class OptionalParameter {
 
 		/**
 		 * Get the dest_addr_subunit value as an enum.
-		 * @return An enum of type Addr_subunit
+		 * @return An enum of type {@link Addr_subunit}
 		 */
 		public Addr_subunit getDestAddrSubunit() {
 			return Addr_subunit.toEnum(value);
 		}
 
+		@Override
 		public String toString() {
 			return getDestAddrSubunit().toString();
 		}
@@ -363,7 +372,7 @@ public abstract class OptionalParameter {
 	 * Represents valid values for the optional parameters dest_network_type and source_network_type.
 	 *
 	 */
-	public static enum Network_type {
+	public enum Network_type {
 		UNKNOWN(0x00),
 		GSM(0x01),
 		ANSI_136_TDMA(0x02),
@@ -376,10 +385,11 @@ public abstract class OptionalParameter {
 		RESERVED(0x09);
 		
 		protected byte value;
-		private Network_type(int value) {
+
+		Network_type(int value) {
 			this.value = (byte)value;
 		}
-		
+
 		public byte value() {
 			return value;
 		}
@@ -397,11 +407,11 @@ public abstract class OptionalParameter {
 	 * The dest_network_type parameter is used to indicate a network type associated with the
 	 * destination address of a message. In the case that the receiving system (e.g. SMSC) does not
 	 * support the indicated network type, it may treat this a failure and return a response PDU
-	 * reporting a failure. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * reporting a failure.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Dest_network_type extends OptionalParameter.Byte {
 
@@ -419,12 +429,13 @@ public abstract class OptionalParameter {
 		
 		/**
 		 * Get the dest_network_type value as an enum.
-		 * @return An enum of type Network_type
+		 * @return An enum of type {@link Network_type}
 		 */
 		public Network_type getDestNetworkType() {
 			return Network_type.toEnum(value);
 		}
 
+		@Override
 		public String toString() {
 			return getDestNetworkType().toString();
 		}
@@ -434,7 +445,7 @@ public abstract class OptionalParameter {
 	 * Represents valid values for the optional parameters dest_bearer_type and source_bearer_type.
 	 *
 	 */
-	public static enum Bearer_type {
+	public enum Bearer_type {
 		UNKNOWN(0x00),
 		SMS(0x01),
 		CIRCUIT_SWITCHED_DATA(0x02),
@@ -447,7 +458,8 @@ public abstract class OptionalParameter {
 		RESERVED(0x09);
 
 		protected byte value;
-		private Bearer_type(int value) {
+
+		Bearer_type(int value) {
 			this.value = (byte)value;
 		}
 
@@ -468,11 +480,11 @@ public abstract class OptionalParameter {
 	 * The dest_bearer_type parameter is used to request the desired bearer for delivery of the
 	 * message to the destination address. In the case that the receiving system (e.g. SMSC) does not
 	 * support the indicated bearer type, it may treat this a failure and return a response PDU reporting
-	 * a failure. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * a failure.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Dest_bearer_type extends OptionalParameter.Byte {
 
@@ -490,12 +502,13 @@ public abstract class OptionalParameter {
 
 		/**
 		 * Get the dest_bearer_type value as an enum.
-		 * @return An enum of type Bearer_type
+		 * @return An enum of type {@link Bearer_type}
 		 */
 		public Bearer_type getDestBearerType() {
 			return Bearer_type.toEnum(value);
 		}
 
+		@Override
 		public String toString() {
 			return getDestBearerType().toString();
 		}
@@ -506,11 +519,11 @@ public abstract class OptionalParameter {
 	 * destination address. This is only useful when a specific dest_bearer_type parameter has also
 	 * been specified as the value is bearer dependent. In the case that the receiving system (e.g.
 	 * SMSC) does not support the indicated telematic interworking, it may treat this a failure and
-	 * return a response PDU reporting a failure. <br>
-	 * <br>
-	 * Wireless Network Technology: GSM
-	 * @author stefanth
+	 * return a response PDU reporting a failure.
 	 *
+	 * Wireless Network Technology: GSM
+	 *
+	 * @author stefanth
 	 */
 	public static class Dest_telematics_id extends OptionalParameter.Short {
 
@@ -526,11 +539,11 @@ public abstract class OptionalParameter {
 	/**
 	 * The source_addr_subunit parameter is used to indicate where a message originated in the
 	 * mobile station, for example a smart card in the mobile station or an external device connected
-	 * to the mobile station. <br>
-	 * <br>
-	 * Wireless Network Technology: GSM
-	 * @author stefanth
+	 * to the mobile station.
 	 *
+	 * Wireless Network Technology: GSM
+	 *
+	 * @author stefanth
 	 */
 	public static class Source_addr_subunit extends OptionalParameter.Byte {
 
@@ -548,12 +561,13 @@ public abstract class OptionalParameter {
 
 		/**
 		 * Get the source_addr_subunit parameter as an enum.
-		 * @return
+		 * @return the addr_subunit optional parameter
 		 */
 		public Addr_subunit getSourceAddrSubunit() {
 			return Addr_subunit.toEnum(value);
 		}
 
+		@Override
 		public String toString() {
 			return getSourceAddrSubunit().toString();
 		}
@@ -561,11 +575,11 @@ public abstract class OptionalParameter {
 
 	/**
 	 * The source_network_type parameter is used to indicate the network type associated with the
-	 * device that originated the message. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * device that originated the message.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Source_network_type extends OptionalParameter.Byte {
 
@@ -589,6 +603,7 @@ public abstract class OptionalParameter {
 			return Network_type.toEnum(value);
 		}
 
+		@Override
 		public String toString() {
 			return getSourceNetworkType().toString();
 		}
@@ -596,11 +611,11 @@ public abstract class OptionalParameter {
 
 	/**
 	 * The source_bearer_type parameter indicates the wireless bearer over which the message
-	 * originated. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * originated.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Source_bearer_type extends OptionalParameter.Byte {
 
@@ -618,12 +633,13 @@ public abstract class OptionalParameter {
 
 		/**
 		 * Get the source_bearer_type value as an enum.
-		 * @return An enum of type Bearer_type
+		 * @return An enum of type {@link Bearer_type}
 		 */
 		public Bearer_type getSourceBearerType() {
 			return Bearer_type.toEnum(value);
 		}
-		
+
+		@Override
 		public String toString() {
 			return getSourceBearerType().toString();
 		}
@@ -631,11 +647,11 @@ public abstract class OptionalParameter {
 
 	/**
 	 * The source_telematics_id parameter indicates the type of telematics interface over which the
-	 * message originated. <br>
-	 * <br>
-	 * Wireless Network Technology: GSM
-	 * @author stefanth
+	 * message originated.
 	 *
+	 * Wireless Network Technology: GSM
+	 *
+	 * @author stefanth
 	 */
 	public static class Source_telematics_id extends OptionalParameter.Byte {
 
@@ -651,11 +667,11 @@ public abstract class OptionalParameter {
 	/**
 	 * This parameter defines the number of seconds which the sender requests the SMSC to keep the
 	 * message if undelivered before it is deemed expired and not worth delivering. If the parameter
-	 * is not present, the SMSC may apply a default value. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * is not present, the SMSC may apply a default value.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Qos_time_to_live extends OptionalParameter.Int {
 
@@ -670,11 +686,11 @@ public abstract class OptionalParameter {
 
 	/**
 	 * The payload_type parameter defines the higher layer PDU type contained in the message
-	 * payload. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * payload.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Payload_type extends OptionalParameter.Byte {
 
@@ -682,29 +698,27 @@ public abstract class OptionalParameter {
 		 * Represents valid values for the optional parameter payload_type.
 		 *
 		 */
-		public enum Payload_type_enum {
+		public enum 	Payload_type_enum {
 			/**
 			 * From Short Message Peer to Peer Protocol Specification v3.4:
 			 * 
-			 * In the case of a WAP
-			 * application, the default higher layer
-			 * message type is a WDP message.
-			 * See [WDP] for details.
+			 * In the case of a WAP application, the default higher layer
+			 * message type is a WDP message. See [WDP] for details.
 			 */
 			DEFAULT(0),
 			/**
 			 * From Short Message Peer to Peer Protocol Specification v3.4:
 			 * 
 			 * WCMP message
-			 * Wireless Control
-			 * Message Protocol formatted data.
+			 * Wireless Control Message Protocol formatted data.
 			 * See [WCMP] for details.
 			 */
 			WCMP(1),
 			RESERVED(255);
 
 			protected byte value;
-			private Payload_type_enum(int value) {
+
+			Payload_type_enum(int value) {
 				this.value = (byte)value;
 			}
 
@@ -735,12 +749,13 @@ public abstract class OptionalParameter {
 		
 		/**
 		 * Get the payload_type value as an enum.
-		 * @return An enum of type Payload_type
+		 * @return An enum of type {@link Payload_type_enum}
 		 */
 		public Payload_type_enum getPayloadType() {
 			return Payload_type_enum.toEnum(value);
 		}
-		
+
+		@Override
 		public String toString() {
 			return getPayloadType().toString();
 		}
@@ -748,14 +763,17 @@ public abstract class OptionalParameter {
 
 	/**
 	 * The additional_status_info_text parameter gives an ASCII textual description of the meaning
-	 * of a response PDU. It is to be used by an implementation to allow easy diagnosis of problems. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * of a response PDU. It is to be used by an implementation to allow easy diagnosis of problems.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Additional_status_info_text extends OptionalParameter.COctetString {
 		public Additional_status_info_text(byte[] value) {
+			super(Tag.ADDITIONAL_STATUS_INFO_TEXT.code(), value);
+		}
+		public Additional_status_info_text(String value) {
 			super(Tag.ADDITIONAL_STATUS_INFO_TEXT.code(), value);
 		}
 	}
@@ -764,15 +782,17 @@ public abstract class OptionalParameter {
 	 * The receipted_message_id parameter indicates the ID of the message being receipted in an
 	 * SMSC Delivery Receipt. This is the opaque SMSC message identifier that was returned in the
 	 * message_id parameter of the SMPP response PDU that acknowledged the submission of the
-	 * original message. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * original message.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Receipted_message_id extends OptionalParameter.COctetString {
-
 		public Receipted_message_id(byte[] value) {
+			super(Tag.RECEIPTED_MESSAGE_ID.code(), value);
+		}
+		public Receipted_message_id(String value) {
 			super(Tag.RECEIPTED_MESSAGE_ID.code(), value);
 		}
 	}
@@ -782,11 +802,11 @@ public abstract class OptionalParameter {
 	 * are messages waiting for the subscriber on systems on the PLMN. The indication can be an icon
 	 * on the MS screen or other MMI indication.
 	 * The ms_msg_wait_facilities can also specify the type of message associated with the message
-	 * waiting indication. <br>
-	 * <br>
-	 * Wireless Network Technology: GSM
-	 * @author stefanth
+	 * waiting indication.
 	 *
+	 * Wireless Network Technology: GSM
+	 *
+	 * @author stefanth
 	 */
 	public static class Ms_msg_wait_facilities extends OptionalParameter.Byte {
 
@@ -798,7 +818,8 @@ public abstract class OptionalParameter {
 			UNKNOWN(4);
 			
 			protected byte value;
-			private Ms_msg_wait_facilities_type(int value) {
+
+			Ms_msg_wait_facilities_type(int value) {
 				this.value = (byte)value;
 			}
 
@@ -834,21 +855,24 @@ public abstract class OptionalParameter {
 		 * The Indicator is encoded in bit 7 as follows:
 		 * 0 = Set Indication Inactive
 		 * 1 = Set Indication Active
-		 * @return
+		 *
+		 * @return {@code true} if the indication is active, {@code false} if the indication is inactive
 		 */
 		public boolean isIndicatorActive() {
 			return (value & 0x80) != 0;
 		}
+
 		/**
 		 * Get the the message type of the message associated with the MWI.
-		 * @return An enum of type Payload_type
+		 * @return An enum of type {@link Ms_msg_wait_facilities_type}
 		 */
 		public Ms_msg_wait_facilities_type getMessageType() {
 			return Ms_msg_wait_facilities_type.toEnum((byte)(value & 0x03));
 		}
-		
+
+		@Override
 		public String toString() {
-			String endString = (isIndicatorActive() ? "active" : "inactive");
+			String endString = isIndicatorActive() ? "active" : "inactive";
 			return getMessageType().toString() + " set as " + endString;
 		}
 	}
@@ -859,11 +883,11 @@ public abstract class OptionalParameter {
 	 * 0 = Privacy Level 0 (Not Restricted) (default)
 	 * 1 = Privacy Level 1 (Restricted)
 	 * 2 = Privacy Level 2 (Confidential)
-	 * 3 = Privacy Level 3 (Secret) <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
+	 * 3 = Privacy Level 3 (Secret)
 	 *
+	 * Wireless Network Technology: CDMA, TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Privacy_indicator extends OptionalParameter.Byte {
 
@@ -878,11 +902,11 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The source_subaddress parameter specifies a subaddress associated with the originator 
-	 * of the message. <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
+	 * of the message.
 	 *
+	 * Wireless Network Technology: CDMA, TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Source_subaddress extends OptionalParameter.OctetString {
 		
@@ -892,29 +916,29 @@ public abstract class OptionalParameter {
 		 * subaddressing information included, and
 		 * implies the type and length of
 		 * subaddressing information which can
-		 * accompany this tag value in the data field. <br>
-		 *  <br>
-		 * Valid Tag values are: <br>
-		 * 00000001 - Reserved <br>
-		 * 00000010 - Reserved <br>
-		 * 10000000 - NSAP (Even) [ITUT X.213] <br>
-		 * 10001000 - NSAP (Odd) [ITUT X.213] <br>
-		 * 10100000 - User Specified <br>
-		 * All other values Reserved <br>
-		 *  <br>
+		 * accompany this tag value in the data field.
+		 *
+		 * Valid Tag values are:
+		 * 00000001 - Reserved
+		 * 00000010 - Reserved
+		 * 10000000 - NSAP (Even) [ITUT X.213]
+		 * 10001000 - NSAP (Odd) [ITUT X.213]
+		 * 10100000 - User Specified
+		 * All other values Reserved
+		 *
 		 * The remaining octets contain the
-		 * subaddress. <br>
-		 *  <br>
+		 * subaddress.
+		 *
 		 * A NSAP address shall be encoded using
 		 * the preferred binary encoding specified in
 		 * [ITUT X.213]. In this case the subaddress
 		 * field contains the Authority and Format
 		 * Identifier.
 		 * 
-		 * A User Specified subaddress is encoded <br>
-		 * according to user specification, subject to a <br>
+		 * A User Specified subaddress is encoded
+		 * according to user specification, subject to a
 		 * maximum of 22 octets.
-		 * @param content
+		 * @param content the source_subaddress optional parameter
 		 */
 		public Source_subaddress(byte[] content) {
 			super(Tag.SOURCE_SUBADDRESS.code, content);
@@ -923,43 +947,42 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The dest_subaddress parameter specifies a subaddress associated with the destination 
-	 * of the message. <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
+	 * of the message.
 	 *
+	 * Wireless Network Technology: CDMA, TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Dest_subaddress extends OptionalParameter.OctetString {
-		
 		/**
 		 * The first octet of the data field is a Type of
 		 * Subaddress tag and indicates the type of
 		 * subaddressing information included, and
 		 * implies the type and length of
 		 * subaddressing information which can
-		 * accompany this tag value in the data field. <br>
-		 *  <br>
-		 * Valid Tag values are: <br>
-		 * 00000001 - Reserved <br>
-		 * 00000010 - Reserved <br>
-		 * 10000000 - NSAP (Even) [ITUT X.213] <br>
-		 * 10001000 - NSAP (Odd) [ITUT X.213] <br>
-		 * 10100000 - User Specified <br>
-		 * All other values Reserved <br>
-		 *  <br>
+		 * accompany this tag value in the data field.
+		 *
+		 * Valid Tag values are:
+		 * 00000001 - Reserved
+		 * 00000010 - Reserved
+		 * 10000000 - NSAP (Even) [ITUT X.213]
+		 * 10001000 - NSAP (Odd) [ITUT X.213]
+		 * 10100000 - User Specified
+		 * All other values Reserved
+		 *
 		 * The remaining octets contain the
-		 * subaddress. <br>
-		 *  <br>
+		 * subaddress.
+		 *
 		 * A NSAP address shall be encoded using
 		 * the preferred binary encoding specified in
 		 * [ITUT X.213]. In this case the subaddress
 		 * field contains the Authority and Format
 		 * Identifier.
 		 * 
-		 * A User Specified subaddress is encoded <br>
-		 * according to user specification, subject to a <br>
-		 * maximum of 22 octets.
-		 * @param content
+		 * A User Specified subaddress is encoded according to user specification,
+		 * subject to a maximum of 22 octets.
+		 *
+		 * @param content the dest_subaddress bytes
 		 */
 		public Dest_subaddress(byte[] content) {
 			super(Tag.DEST_SUBADDRESS.code, content);
@@ -967,17 +990,17 @@ public abstract class OptionalParameter {
 	}
 	
 	/**
-	 * A reference assigned by the originating SME to the short message. <br>
+	 * A reference assigned by the originating SME to the short message.
 	 * <br>
 	 * Wireless Network Technology: Generic
-	 * @author stefanth
 	 *
+	 * @author stefanth
 	 */
 	public static class User_message_reference extends OptionalParameter.Short {
 		
 		/**
 		 * From SMPP specs: "All values allowed."
-		 * @param value
+		 * @param value the user_message_reference optional parameter
 		 */
 		public User_message_reference(short value) {
 			super(Tag.USER_MESSAGE_REFERENCE, value);
@@ -990,42 +1013,43 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * A response code set by the user in a User Acknowledgement/Reply message. The response
-	 * codes are application specific. <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
+	 * codes are application specific.
 	 *
+	 * Wireless Network Technology: CDMA, TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class User_response_code extends OptionalParameter.Byte {
 		
 		/**
-		 * From SMPP specs: <br>
-		 * 0 to 255 (IS-95 CDMA) <br>
+		 * From SMPP specs:
+		 * 0 to 255 (IS-95 CDMA)
 		 * 0 to 15 (CMT-136 TDMA)
-		 * @param value
+		 *
+		 * @param value the user_response_code optional parameter
 		 */
 		public User_response_code(byte value) {
-			super(Tag.USER_MESSAGE_REFERENCE, value);
+			super(Tag.USER_RESPONSE_CODE, value);
 		}
 
 		public User_response_code(byte[] content) {
-			super(Tag.USER_MESSAGE_REFERENCE.code, content);
+			super(Tag.USER_RESPONSE_CODE.code, content);
 		}
 	}
 
 	/**
 	 * The source_port parameter is used to indicate the application port number associated with the
-	 * source address of the message. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * source address of the message.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Source_port extends OptionalParameter.Short {
 		
 		/**
 		 * From SMPP specs: "All values allowed."
-		 * @param value
+		 * @param value the source_port optional parameter
 		 */
 		public Source_port(short value) {
 			super(Tag.SOURCE_PORT, value);
@@ -1038,17 +1062,20 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The destination_port parameter is used to indicate the application port number associated with
-	 * the destination address of the message. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * the destination address of the message.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * In SMPP 5.0, this is dest_port.
+	 *
+	 * @author stefanth
 	 */
 	public static class Destination_port extends OptionalParameter.Short {
 		
 		/**
 		 * From SMPP specs: "All values allowed."
-		 * @param value
+		 *
+		 * @param value the destination_port optional parameter
 		 */
 		public Destination_port(short value) {
 			super(Tag.DESTINATION_PORT, value);
@@ -1061,29 +1088,24 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The sar_msg_ref_num parameter is used to indicate the reference number for a particular
-	 * concatenated short message. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * concatenated short message.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Sar_msg_ref_num extends OptionalParameter.Short {
 		
 		/**
-		 * This parameter shall contain a originator
-		 * generated reference number so that a
-		 * segmented short message may be
-		 * reassembled into a single original message.
-		 * This allows the parallel transmission of
-		 * several segmented messages. This
-		 * reference number shall remain constant for
-		 * every segment which makes up a particular
-		 * concatenated short message.
-		 * When present, the PDU must also contain
-		 * the sar_total_segments and
-		 * sar_segment_seqnum parameters.
+		 * This parameter shall contain a originator generated reference number so that a
+		 * segmented short message may be reassembled into a single original message.
+		 * This allows the parallel transmission of several segmented messages. This
+		 * reference number shall remain constant for every segment which makes up a particular
+		 * concatenated short message. When present, the PDU must also contain
+		 * the sar_total_segments and sar_segment_seqnum parameters.
 		 * Otherwise this parameter shall be ignored.
-		 * @param value
+		 *
+		 * @param value the sar_msg_ref_num value
 		 */
 		public Sar_msg_ref_num(short value) {
 			super(Tag.SAR_MSG_REF_NUM, value);
@@ -1095,11 +1117,11 @@ public abstract class OptionalParameter {
 	}
 	
 	/**
-	 * The language_indicator parameter is used to indicate the language of the short message. <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
+	 * The language_indicator parameter is used to indicate the language of the short message.
 	 *
+	 * Wireless Network Technology: CDMA, TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Language_indicator extends OptionalParameter.Byte {
 		
@@ -1117,7 +1139,8 @@ public abstract class OptionalParameter {
 			RESERVED(255);
 
 			protected byte value;
-			private Language_indicator_enum(int value) {
+
+			Language_indicator_enum(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1151,26 +1174,20 @@ public abstract class OptionalParameter {
 		}
 	}
 	
-	
 	/**
-	 * The sar_total_segments parameter is used to indicate the total number of short messages
-	 * within the concatenated short message. <br>
+	 * The sar_total_segments parameter is used to indicate the total number of
+	 * short messages within the concatenated short message. <br>
 	 * <br>
-	 * This parameter shall contain a value in the
-	 * range 1 to 255 indicating the total number
-	 * of fragments within the concatenated short
-	 * message. The value shall start at 1 and
-	 * remain constant for every short message
-	 * which makes up the concatenated short
-	 * message. <br>
-	 * When present, the PDU must also contain
-	 * the sar_msg_ref_num and
-	 * sar_segment_seqnum parameters.
-	 * Otherwise this parameter shall be ignored. <br>
+	 * This parameter shall contain a value in the range 1 to 255 indicating
+	 * the total number of fragments within the concatenated short message.
+	 * The value shall start at 1 and remain constant for every short message
+	 * which makes up the concatenated short message. <br>
+	 * When present, the PDU must also contain the sar_msg_ref_num and
+	 * sar_segment_seqnum parameters. Otherwise this parameter shall be ignored. <br>
 	 * <br>
 	 * Wireless Network Technology: Generic
-	 * @author stefanth
 	 *
+	 * @author stefanth
 	 */
 	public static class Sar_total_segments extends OptionalParameter.Byte {
 		
@@ -1184,24 +1201,19 @@ public abstract class OptionalParameter {
 	}
 	
 	/**
-	 * The sar_segment_seqnum parameter is used to indicate the sequence number of a particular
-	 * short message within the concatenated short message. <br>
+	 * The sar_segment_seqnum parameter is used to indicate the sequence number of
+	 * a particular short message within the concatenated short message. <br>
 	 * <br>
-	 * This parameter shall contain a value in the range
-	 * 1 to 255 indicating the sequence number of
-	 * a particular message within the
-	 * concatenated short message. The value
-	 * shall start at 1 and increment by one for
-	 * every message sent within the concatenated
-	 * short message. <br>
-	 * When present, the PDU must also contain
-	 * the sar_total_segments and
-	 * sar_msg_ref_num parameters. Otherwise
-	 * this parameter shall be ignored. <br>
+	 * This parameter shall contain a value in the range 1 to 255 indicating
+	 * the sequence number of a particular message within the concatenated short message.
+	 * The value shall start at 1 and increment by one for every message sent within
+	 * the concatenated short message. <br>
+	 * When present, the PDU must also contain the sar_total_segments and sar_msg_ref_num parameters.
+	 * Otherwise this parameter shall be ignored. <br>
 	 * <br>
 	 * Wireless Network Technology: Generic
-	 * @author stefanth
 	 *
+	 * @author stefanth
 	 */
 	public static class Sar_segment_seqnum extends OptionalParameter.Byte {
 		
@@ -1216,11 +1228,11 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The sc_interface_version parameter is used to indicate the SMPP version supported by the
-	 * SMSC. It is returned in the bind response PDUs. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * SMSC. It is returned in the bind response PDUs.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Sc_interface_version extends OptionalParameter.Byte {
 		
@@ -1238,43 +1250,35 @@ public abstract class OptionalParameter {
 	}
 
 	/**
-	 * This parameter controls the presentation
-	 * indication and screening of the
-	 * CallBackNumber at the mobile station. If
-	 * present, the callback_num parameter must
-	 * also be present. <br>
+	 * This parameter controls the presentation indication and screening of
+	 * the CallBackNumber at the mobile station. If present,
+	 * the callback_num parameter must also be present. <br>
 	 * <br>
-	 * If this parameter is present
-	 * and there are multiple
-	 * instances of the callback_num
-	 * parameter then this parameter
-	 * must occur an equal number
-	 * of instances and the order of
-	 * occurrence determines the
-	 * particular
-	 * callback_num_pres_ind
-	 * which corresponds to a
-	 * particular callback_num.<br>
+	 * If this parameter is present and there are multiple
+	 * instances of the callback_num parameter then this parameter
+	 * must occur an equal number of instances and the order of
+	 * occurrence determines the particular callback_num_pres_ind
+	 * which corresponds to a particular callback_num.<br>
 	 * <br>
 	 * Bits 7............0 = 0000ppss <br>
 	 * <br>
 	 * The Presentation Indicator is encoded in
-	 * bits 2 and 3 as follows: <br>
-	 * 00 = Presentation Allowed <br>
-	 * 01 = Presentation Restricted <br>
-	 * 10 = Number Not Available <br>
-	 * 11 = Reserved <br>
-	 * <br>
-	 * The Screening Indicator is encoded in bits
-	 * 0 and 1 as follows: <br>
-	 * 00 = User provided, not screened <br>
-	 * 01 = User provided, verified and passed <br>
-	 * 10 = User provided, verified and failed <br>
-	 * 11 = Network Provided. <br>
-	 * <br>
-	 * Wireless Network Technology: TDMA
-	 * @author stefanth
+	 * bits 2 and 3 as follows:
+	 * 00 = Presentation Allowed
+	 * 01 = Presentation Restricted
+	 * 10 = Number Not Available
+	 * 11 = Reserved
 	 *
+	 * The Screening Indicator is encoded in bits
+	 * 0 and 1 as follows:
+	 * 00 = User provided, not screened
+	 * 01 = User provided, verified and passed
+	 * 10 = User provided, verified and failed
+	 * 11 = Network Provided.
+	 *
+	 * Wireless Network Technology: TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Callback_num_pres_ind extends OptionalParameter.Byte {
 		
@@ -1297,7 +1301,8 @@ public abstract class OptionalParameter {
 			RESERVED(3);
 			
 			protected byte value;
-			private Presentation_Indicator(int value) {
+
+			Presentation_Indicator(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1333,7 +1338,8 @@ public abstract class OptionalParameter {
 			NETWORK_PROVIDED(3);
 
 			protected byte value;
-			private Screening_Indicator(int value) {
+
+			Screening_Indicator(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1372,33 +1378,32 @@ public abstract class OptionalParameter {
 	}
 	
 	/**
-	 * From SMPP specs: <br>
+	 * From SMPP specs:
 	 * Associates a displayable alphanumeric tag with the
-	 * callback number. <br>
-	 * <br>
+	 * callback number.
+	 *
 	 * If this parameter is present and there are multiple
 	 * instances of the callback_num parameter then this parameter
 	 * must occur an equal number of instances and the order of
 	 * occurrence determines the particular callback_num_atag
-	 * which corresponds to a particular callback_num.<br>
-	 * <br>
-	 * Bits: <br>
-	 * 7...............0 <br>
-	 * EEEEEEEE (octet 1) <br>
-	 * XXXXXXXX (octet 2) <br>
-	 * : <br>
-	 * : <br>
-	 * XXXXXXXX (octet N) <br>
+	 * which corresponds to a particular callback_num.
+	 *
+	 * Bits:
+	 * 7...............0
+	 * EEEEEEEE (octet 1)
+	 * XXXXXXXX (octet 2)
+	 *
+	 * XXXXXXXX (octet N)
 	 * The first octet contains the encoding scheme of the Alpha Tag display
 	 * characters. This field contains the same values as for Data Coding Scheme (see
-	 * section 5.2.19). <br>
-	 * The following octets contain the display characters: <br>
-	 * There is one octet per display character for 7-bit and 8-bit encoding schemes. <br>
-	 * There are two octets per display character for 16-bit encoding schemes. <br>
-	 * <br>
-	 * Wireless Network Technology: TDMA
-	 * @author stefanth
+	 * section 5.2.19).
+	 * The following octets contain the display characters:
+	 * There is one octet per display character for 7-bit and 8-bit encoding schemes.
+	 * There are two octets per display character for 16-bit encoding schemes.
 	 *
+	 * Wireless Network Technology: TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Callback_num_atag extends OptionalParameter.OctetString {
 		
@@ -1408,14 +1413,14 @@ public abstract class OptionalParameter {
 	}
 	
 	/**
-	 * The number_of_messages parameter is used to indicate the number of messages stored in a mailbox. <br>
-	 * <br>
-	 * 0 to 99 = allowed values.<br>
-	 * values 100 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA
-	 * @author stefanth
+	 * The number_of_messages parameter is used to indicate the number of messages stored in a mailbox.
 	 *
+	 * 0 to 99 = allowed values.
+	 * values 100 to 255 are reserved
+	 *
+	 * Wireless Network Technology: CDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Number_of_messages extends OptionalParameter.Byte {
 		
@@ -1431,32 +1436,30 @@ public abstract class OptionalParameter {
 	/**
 	 * The callback_num parameter associates a call back number with the message. In TDMA
 	 * networks, it is possible to send and receive multiple callback numbers to/from TDMA mobile
-	 * stations. <br>
-	 * <br>
-	 * Bits <br>
-	 * 7.............0 <br>
-	 * 0000000D (octet 1) <br>
-	 * 00000TTT (octet 2) <br>
-	 * 0000NNNN (octet 3) <br>
-	 * XXXXXXXX (octet 4) <br>
-	 * : <br>
-	 * : <br>
-	 * XXXXXXXX (octet N) <br>
-	 * The originating SME can set a Call Back Number for the receiving Mobile Station. <br>
-	 * The first octet contains the Digit Mode Indicator. <br>
+	 * stations.
+	 *
+	 * Bits
+	 * 7.............0
+	 * 0000000D (octet 1)
+	 * 00000TTT (octet 2)
+	 * 0000NNNN (octet 3)
+	 * XXXXXXXX (octet 4)
+	 *
+	 * XXXXXXXX (octet N)
+	 * The originating SME can set a Call Back Number for the receiving Mobile Station.
+	 * The first octet contains the Digit Mode Indicator.
 	 * Bit D=0 indicates that the Call Back Number is sent to the mobile as DTMF
 	 * digits encoded in TBCD. Bit D=1 indicates that the Call Back Number is sent to the
-	 * mobile encoded as ASCII digits. <br>
-	 * The 2nd octet contains the Type of Number (TON). Encoded as in section 5.2.5. <br>
+	 * mobile encoded as ASCII digits.
+	 * The 2nd octet contains the Type of Number (TON). Encoded as in section 5.2.5.
 	 * The third octet contains the Numbering Plan Indicator (NPI). Encoded as specified
-	 * in section 5.2.6 <br>
+	 * in section 5.2.6
 	 * The remaining octets contain the Call Back Number digits encoded as ASCII
-	 * characters <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA, GSM, iDEN
-	 * 
-	 * @author stefanth
+	 * characters
 	 *
+	 * Wireless Network Technology: CDMA, TDMA, GSM, iDEN
+	 *
+	 * @author stefanth
 	 */
 	public static class Callback_num extends OptionalParameter.OctetString {
 		
@@ -1467,18 +1470,18 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The dpf_result parameter is used in the data_sm_resp PDU to indicate if delivery pending flag
-	 * (DPF) was set for a delivery failure of the short message. <br>
+	 * (DPF) was set for a delivery failure of the short message.
 	 * If the dpf_result parameter is not included in the data_sm_resp PDU, the ESME should assume
-	 * that DPF is not set. <br>
-	 * Currently this parameter is only applicable for the Transaction message mode.<br>
-	 * <br>
-	 * 0 = DPF not set <br>
-	 * 1 = DPF set <br>
-	 * values 2 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * that DPF is not set.
+	 * Currently this parameter is only applicable for the Transaction message mode.
 	 *
+	 * 0 = DPF not set
+	 * 1 = DPF set
+	 * values 2 to 255 are reserved
+	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Dpf_result extends OptionalParameter.Byte {
 		
@@ -1495,28 +1498,28 @@ public abstract class OptionalParameter {
 		}
 		
 		public boolean getDpfResult() {
-			return (value == 1);
+			return value == 1;
 		}
 	}
 	
 	/**
 	 * An ESME may use the set_dpf parameter to request the setting of a delivery pending flag (DPF)
-	 * for certain delivery failure scenarios, such as <br>
-	 * - MS is unavailable for message delivery (as indicated by the HLR) <br>
+	 * for certain delivery failure scenarios, such as
+	 * - MS is unavailable for message delivery (as indicated by the HLR)
 	 * The SMSC should respond to such a request with an alert_notification PDU when it detects
-	 * that the destination MS has become available. <br>
+	 * that the destination MS has become available.
 	 * The delivery failure scenarios under which DPF is set is SMSC implementation and network
 	 * implementation specific. If a delivery pending flag is set by the SMSC or network (e.g. HLR),
 	 * then the SMSC should indicate this to the ESME in the data_sm_resp message via the
-	 * dpf_result parameter. <br>
-	 * <br>
-	 * 0 = Setting of DPF for delivery failure to MS not requested <br>
-	 * 1 = Setting of DPF for delivery failure requested (default) <br>
- 	 * values 2 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * dpf_result parameter.
 	 *
+	 * 0 = Setting of DPF for delivery failure to MS not requested
+	 * 1 = Setting of DPF for delivery failure requested (default)
+ 	 * values 2 to 255 are reserved
+	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Set_dpf extends OptionalParameter.Byte {
 		
@@ -1533,24 +1536,24 @@ public abstract class OptionalParameter {
 		}
 		
 		public boolean isDpfSet() {
-			return (value == 1);
+			return value == 1;
 		}
 	}
 	
 	/**
 	 * The ms_availability_status parameter is used in the alert_notification operation to indicate the
-	 * availability state of the MS to the ESME. <br>
+	 * availability state of the MS to the ESME.
 	 * If the SMSC does not include the parameter in the alert_notification operation, the ESME
-	 * should assume that the MS is in an "available" state. <br>
-	 * <br>
-	 * 0 = Available (Default) <br>
-	 * 1 = Denied (e.g. suspended, no SMS capability, etc.) <br>
-	 * 2 = Unavailable <br>
-	 * values 3 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * should assume that the MS is in an "available" state.
 	 *
+	 * 0 = Available (Default)
+	 * 1 = Denied (e.g. suspended, no SMS capability, etc.)
+	 * 2 = Unavailable
+	 * values 3 to 255 are reserved
+	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Ms_availability_status extends OptionalParameter.Byte {
 		
@@ -1561,7 +1564,8 @@ public abstract class OptionalParameter {
 			RESERVED(3);
 			
 			protected byte value;
-			private Ms_availability_status_enum(int value) {
+
+			Ms_availability_status_enum(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1597,31 +1601,31 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The network_error_code parameter is used to indicate the actual network error code for a
-	 * delivery failure. The network error code is technology specific.<br>
-	 * <br>
-	 * Bits <br>
-	 * 7.............0 <br>
-	 * XXXXXXXX (octet 1) <br>
-	 * YYYYYYYY (octet 2) <br>
-	 * YYYYYYYY (octet 3) <br>
-	 * <br>
-	 * The first octet indicates the network type. <br>
-	 * The following values are defined: <br>
-	 * 1 = ANSI-136 <br>
-	 * 2 = IS-95 <br>
-	 * 3 = GSM <br>
+	 * delivery failure. The network error code is technology specific.
+	 *
+	 * Bits
+	 * 7.............0
+	 * XXXXXXXX (octet 1)
+	 * YYYYYYYY (octet 2)
+	 * YYYYYYYY (octet 3)
+	 *
+	 * The first octet indicates the network type.
+	 * The following values are defined:
+	 * 1 = ANSI-136
+	 * 2 = IS-95
+	 * 3 = GSM
 	 * 4 = ANSI 136 Cause Code (SMPP v5.0)
 	 * 5 = IS 95 Cause Code (SMPP v5.0)
 	 * 6 = ANSI-41 Error (SMPP v5.0)
 	 * 7 = SMPP Error (SMPP v5.0)
 	 * 8 = Message Center Specific (SMPP v5.0)
-	 * All other values reserved. <br>
+	 * All other values reserved.
 	 * The remaining two octets specify the actual network error code appropriate to the
-	 * network type. <br>
-	 * <br>
+	 * network type.
+	 *
 	 * Wireless Network Technology: Generic
+	 *
 	 * @author stefanth
-	 * 
 	 */
 	public static class Network_error_code extends OptionalParameter.OctetString {
 		
@@ -1664,7 +1668,8 @@ public abstract class OptionalParameter {
 			RESERVED(9);
 			
 			protected byte value;
-			private Network_error_code_type(int value) {
+
+			Network_error_code_type(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1706,16 +1711,15 @@ public abstract class OptionalParameter {
 	 * 
 	 * When sending messages longer than 254 octets the message_payload parameter should be used and the
 	 * sm_length parameter should be set to zero. Some SMSC always put the user data into the
-	 * message_payload field, regardless of user data length. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * 
-	 * @author stefanth
+	 * message_payload field, regardless of user data length.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Message_payload extends OptionalParameter.OctetString {
 
-		public Message_payload(byte value[]) {
+		public Message_payload(byte[] value) {
 			super(Tag.MESSAGE_PAYLOAD.code(), value);
 		}
 	}
@@ -1724,18 +1728,18 @@ public abstract class OptionalParameter {
 	 * The delivery_failure_reason parameter is used in the data_sm_resp operation to indicate the
 	 * outcome of the message delivery attempt (only applicable for transaction message mode). If a
 	 * delivery failure due to a network error is indicated, the ESME may check the
-	 * network_error_code parameter (if present) for the actual network error code. <br>
-	 * The delivery_failure_reason parameter is not included if the delivery attempt was successful. <br>
-	 * <br>
-	 * 0 = Destination unavailable <br>
-	 * 1 = Destination Address Invalid (e.g. suspended, no SMS capability, etc.) <br>
-	 * 2 = Permanent network error <br>
-	 * 3 = Temporary network error <br>
-	 * values 4 to are 255 reserved <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * network_error_code parameter (if present) for the actual network error code.
+	 * The delivery_failure_reason parameter is not included if the delivery attempt was successful.
 	 *
+	 * 0 = Destination unavailable
+	 * 1 = Destination Address Invalid (e.g. suspended, no SMS capability, etc.)
+	 * 2 = Permanent network error
+	 * 3 = Temporary network error
+	 * values 4 to are 255 reserved
+	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Delivery_failure_reason extends OptionalParameter.Byte {
 		public enum Delivery_failure_reason_enum {
@@ -1761,7 +1765,8 @@ public abstract class OptionalParameter {
 			RESERVED(4);
 			
 			protected byte value;
-			private Delivery_failure_reason_enum(int value) {
+
+			Delivery_failure_reason_enum(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1771,8 +1776,9 @@ public abstract class OptionalParameter {
 
 			public static Delivery_failure_reason_enum toEnum(byte value) {
 				for (Delivery_failure_reason_enum v : Delivery_failure_reason_enum.values()) {
-					if (v.value == value)
+					if (v.value == value) {
 						return v;
+					}
 				}
 				return RESERVED;
 			}
@@ -1798,15 +1804,15 @@ public abstract class OptionalParameter {
 	/**
 	 * The more_messages_to_send parameter is used by the ESME in the submit_sm and data_sm
 	 * operations to indicate to the SMSC that there are further messages for the same destination
-	 * SME. The SMSC may use this setting for network resource optimization. <br>
-	 * <br>
-	 * 0 = No more messages to follow <br>
-	 * 1 = More messages to follow (default) <br>
-	 * values 2 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: GSM
-	 * @author stefanth
+	 * SME. The SMSC may use this setting for network resource optimization.
 	 *
+	 * 0 = No more messages to follow
+	 * 1 = More messages to follow (default)
+	 * values 2 to 255 are reserved
+	 *
+	 * Wireless Network Technology: GSM
+	 *
+	 * @author stefanth
 	 */
 	public static class More_messages_to_send extends OptionalParameter.Byte {
 		public enum More_messages_to_send_enum {
@@ -1824,7 +1830,8 @@ public abstract class OptionalParameter {
 			RESERVED(2);
 			
 			protected byte value;
-			private More_messages_to_send_enum(int value) {
+
+			More_messages_to_send_enum(int value) {
 				this.value = (byte)value;
 			}
 
@@ -1857,23 +1864,22 @@ public abstract class OptionalParameter {
 			return More_messages_to_send_enum.toEnum(value);
 		}
 	}
-	
-	
+
 	/**
 	 * The message_state optional parameter is used by the SMSC in the deliver_sm and data_sm
-	 * PDUs to indicate to the ESME the final message state for an SMSC Delivery Receipt. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * PDUs to indicate to the ESME the final message state for an SMSC Delivery Receipt.
 	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
 	 */
 	public static class Message_state extends OptionalParameter.Byte {
 
 		/**
 		 * Represents valid values for the optional parameter message_state.
-		 *
 		 */
 		public enum Message_state_enum {
+			SCHEDULED(0),
 			ENROUTE(1),
 			DELIVERED(2),
 			EXPIRED(3),
@@ -1881,11 +1887,12 @@ public abstract class OptionalParameter {
 			UNDELIVERABLE(5),
 			ACCEPTED(6),
 			UNKNOWN(7),
-			REJECTED(8);
+			REJECTED(8),
+			SKIPPED(9);
 			
 			private byte value;
-			
-			private Message_state_enum(int value) {
+
+			Message_state_enum(int value) {
 				this.value = (byte)value;
 			}
 			
@@ -1911,12 +1918,13 @@ public abstract class OptionalParameter {
 		
 		/**
 		 * Get the message_state value as an enum.
-		 * @return An enum of type Message_state_enum
+		 * @return An enum of type {@link Message_state_enum}
 		 */
 		public Message_state_enum getMessageState() {
 			return Message_state_enum.toEnum(value);
 		}
-		
+
+		@Override
 		public String toString() {
 			return getMessageState().toString();
 		}
@@ -1924,11 +1932,11 @@ public abstract class OptionalParameter {
 
 	/**
 	 * The ussd_service_op parameter is required to define the USSD service operation when SMPP
-	 * is being used as an interface to a (GSM) USSD system. <br>
-	 * <br>
-	 * Wireless Network Technology: GSM (USSD)
-	 * @author stefanth
+	 * is being used as an interface to a (GSM) USSD system.
 	 *
+	 * Wireless Network Technology: GSM (USSD)
+	 *
+	 * @author stefanth
 	 */
 	public static class Ussd_service_op extends OptionalParameter.Byte {
 
@@ -1940,35 +1948,304 @@ public abstract class OptionalParameter {
 			super(Tag.USSD_SERVICE_OP.code, content);
 		}
 	}
-	
+
 	/**
-	 * Billing information passed from ESME to MC <br>
-	 * <br>
-	 * Bits 7......0 <br>
-	 * 0XXXXXXX (Reserved) <br>
-	 * 1XXXXXXX (Vendor Specific) <br>
-	 * The first octet represents the Billing Format tag and indicates the format of the billing information in the
-	 * remaining octets. <br>
-	 * The remaining octets contain the billing information. <br>
-	 * <br>
-	 * Wireless Network Technology: Generic
-	 * @author stefanth
+	 * The broadcast_channel_indicator parameter specifies the Cell Broadcast channel that should be used for broadcasting the message.
 	 *
+	 * 0 = Basic Broadcast Channel (Default)
+	 * 1 = Extended Broadcast Channel
+	 *
+	 * @author pmoerenhout
 	 */
-	public static class Billing_identification extends OptionalParameter.OctetString {
-		public Billing_identification(byte value[]) {
-			super(Tag.BILLING_IDENTIFICATION.code, value);
+	public static class Broadcast_channel_indicator extends OptionalParameter.Byte {
+
+		public Broadcast_channel_indicator(byte value) {
+			super(Tag.BROADCAST_CHANNEL_INDICATOR, value);
 		}
 
+		public Broadcast_channel_indicator(byte[] content) {
+			super(Tag.BROADCAST_CHANNEL_INDICATOR.code, content);
+		}
 	}
 
-	
+	/**
+	 * The broadcast_content_type parameter specifies the content_type of the message content.
+	 *
+	 * The first octet is a Type of Network tag indicating the network type.
+	 * 0 = Generic
+	 * 1 = GSM [23041]
+	 * 2 = TDMA [IS824][ANSI-41]
+	 * 3 = CDMA [IS824][IS637]
+	 *
+	 * Octets 2-3 contain the broadcast content type. The following values apply when this is set to 0 (Generic):
+	 * 0x0000     Index
+	 * 0x0001     Emergency Broadcasts
+	 * 0x0002     IRDB Download
+	 * etc.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_content_type extends OptionalParameter.OctetString {
+		public Broadcast_content_type(byte[] value) {
+			super(Tag.BROADCAST_CONTENT_TYPE.code, value);
+		}
+	}
+
+	public static class Broadcast_content_type_info extends OptionalParameter.OctetString {
+		public Broadcast_content_type_info(byte[] value) {
+			super(Tag.BROADCAST_CONTENT_TYPE_INFO.code, value);
+		}
+	}
+
+	/**
+	 * The broadcast_message_class parameter is used to route messages when received by a mobile station to user-defined destinations or to Terminal Equipment.
+	 *
+	 * 0x00 = No Class Specified (default)
+	 * 0x01 = Class 1 (User Defined)
+	 * 0x02 = Class 2 (User Defined)
+	 * 0x03 = Class 3 (Terminal Equipment)
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_message_class extends OptionalParameter.Byte {
+		public Broadcast_message_class(byte[] value) {
+			super(Tag.BROADCAST_MESSAGE_CLASS.code, value);
+		}
+	}
+
+	/**
+	 * This field indicates the number of repeated broadcasts requested by the Submitter.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_rep_num extends OptionalParameter.Short {
+		public Broadcast_rep_num(short value) {
+			super(Tag.BROADCAST_REP_NUM.code, value);
+		}
+
+		public Broadcast_rep_num(byte[] content) {
+			super(Tag.BROADCAST_REP_NUM.code, content);
+		}
+	}
+
+	/**
+	 * The broadcast_frequency_interval parameter specifies the frequency interval at which the broadcasts of a message should be repeated.
+	 *
+	 * Octet 1: specifies the Units of Time specified as follows:
+	 * Encoding          Time Unit
+	 * 0x00 As frequently as possible
+	 * 0x08 seconds
+	 * 0x09 minutes
+	 * 0x0A hours
+	 * 0x0B days
+	 * 0x0C weeks
+	 * 0x0D months
+	 * 0x0E years
+	 * Octet 2 + Octet 3: specifies the number of the specified time units in an unsigned integral format.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_frequency_interval extends OptionalParameter.OctetString {
+		public Broadcast_frequency_interval(byte[] value) {
+			super(Tag.BROADCAST_FREQUENCY_INTERVAL.code, value);
+		}
+	}
+
+	/**
+	 * The broadcast_area_identifier defines the Broadcast Area in terms of a geographical descriptor.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_area_identifier extends OptionalParameter.OctetString {
+		public Broadcast_area_identifier(byte[] value) {
+			super(Tag.BROADCAST_AREA_IDENTIFIER.code, value);
+		}
+	}
+
+	/**
+	 * The broadcast_error_status parameter specifies the nature of the failure associated with a
+	 * particular broadcast_area_identifier specified in a broadcast request.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_error_status extends OptionalParameter.Int {
+		public Broadcast_error_status(int value) {
+			super(Tag.BROADCAST_ERROR_STATUS.code, value);
+		}
+
+		public Broadcast_error_status(byte[] content) {
+			super(Tag.BROADCAST_ERROR_STATUS.code, content);
+		}
+	}
+
+	/**
+	 * The broadcast_area_success parameter is a success rate indicator, defined as the ratio of the number of BTSs
+	 * who accepted the message and the total number of BTSs who should accept the message, for a particular broadcast_area_identifier.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_area_success extends OptionalParameter.Byte {
+		public Broadcast_area_success(byte value) {
+			super(Tag.BROADCAST_AREA_SUCCESS.code, value);
+		}
+
+		public Broadcast_area_success(byte[] content) {
+			super(Tag.BROADCAST_AREA_SUCCESS.code, content);
+		}
+	}
+
+	/**
+	 * The broadcast_end_time parameter indicates the date and time at which the broadcasting state of this message
+	 * was set to terminated in the Message Centre.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_end_time extends OptionalParameter.COctetString {
+		public Broadcast_end_time(String value) {
+			super(Tag.BROADCAST_END_TIME.code, value);
+		}
+
+		public Broadcast_end_time(byte[] content) {
+			super(Tag.BROADCAST_END_TIME.code, content);
+		}
+	}
+
+	/**
+	 * The broadcast_service_group parameter is used to specify special target groups for broadcast information.
+	 *
+	 * @author pmoerenhout
+	 */
+	public static class Broadcast_service_group extends OptionalParameter.OctetString {
+		public Broadcast_service_group(byte[] value) {
+			super(Tag.BROADCAST_SERVICE_GROUP.code, value);
+		}
+	}
+
+	/**
+	 * Billing information passed from ESME to MC
+	 *
+	 * Bits 7......0
+	 * 0XXXXXXX (Reserved)
+	 * 1XXXXXXX (Vendor Specific)
+	 * The first octet represents the Billing Format tag and indicates the format of the billing information in the
+	 * remaining octets.
+	 * The remaining octets contain the billing information.
+	 *
+	 * Wireless Network Technology: Generic
+	 *
+	 * @author stefanth
+	 */
+	public static class Billing_identification extends OptionalParameter.OctetString {
+		public Billing_identification(byte[] value) {
+			super(Tag.BILLING_IDENTIFICATION.code, value);
+		}
+	}
+
+	/**
+	 * The source_network_id assigned to a wireless network operator or ESME operator is a unique address that may be derived and assigned
+	 * by the node owner without establishing a central assignment and management authority.
+	 * When this TLV is specified, it must be accompanied with a source_node_id TLV.
+	 */
+	public static class Source_network_id extends OptionalParameter.COctetString {
+		public Source_network_id(String value) {
+			super(Tag.SOURCE_NETWORK_ID.code, value);
+		}
+		public Source_network_id(byte[] content) {
+			super(Tag.BROADCAST_AREA_SUCCESS.code, content);
+		}
+	}
+
+	/**
+	 * The dest_network_id assigned to a wireless network operator or ESME operator is a unique address that may be derived and assigned
+	 * by the node owner without establishing a central assignment and management authority.
+	 * When this TLV is specified, it must be accompanied with a dest_node_id TLV.
+	 */
+	public static class Dest_network_id extends OptionalParameter.COctetString {
+		public Dest_network_id(String value) {
+			super(Tag.DEST_NETWORK_ID.code, value);
+		}
+		public Dest_network_id(byte[] content) {
+			super(Tag.DEST_NETWORK_ID.code, content);
+		}
+	}
+
+	/**
+	 * The source_node_id is a unique number assigned within a single ESME or MC network and must uniquely identify an originating node
+	 * within the context of the MC or ESME. The content of a source_node_id is comprised of decimal digits and
+	 * is at the discretion of the owning ESME or MC.
+	 *
+	 * Sequence of 6 decimal digits
+	 */
+	public static class Source_node_id extends OptionalParameter.OctetString {
+		public Source_node_id(byte[] value) {
+			super(Tag.SOURCE_NODE_ID.code, value);
+		}
+	}
+
+	/**
+	 * The dest_node_id is a unique number assigned within a single ESME or MC network and must uniquely identify a destination node
+	 * within the context of the MC or ESME. The content of a dest_node_id is comprised of decimal digits and
+	 * is at the discretion of the owning ESME or MC.
+	 *
+	 * Sequence of 6 decimal digits
+	 */
+	public static class Dest_node_id extends OptionalParameter.OctetString {
+		public Dest_node_id(byte[] value) {
+			super(Tag.DEST_NODE_ID.code, value);
+		}
+	}
+
+	/**
+	 * The dest_addr_np_resolution TLV is used to pass an indicator relating to a number portability query.
+	 * If this TLV is omitted, the default value is assumed.
+	 *
+	 * 0 = query has not been performed (default)
+	 * 1 = query has been performed, number not ported
+	 * 2 = query has been performed, number ported
+	 */
+	public static class Dest_addr_np_resolution extends OptionalParameter.Byte {
+		public Dest_addr_np_resolution(byte value) {
+			super(Tag.DEST_ADDR_NP_RESOLUTION.code, value);
+		}
+
+		public Dest_addr_np_resolution(byte[] content) {
+			super(Tag.DEST_ADDR_NP_RESOLUTION.code, content);
+		}
+	}
+
+	/**
+	 * The dest_addr_np_information TLV is used to carry number portability information.
+	 *
+	 * CDMA &amp; TDMA (North America):
+	 * When the Number Portability parameters are used within the US, the information contained with the NP Information
+	 * will be the Location Routing Number (LRN).
+	 * A LRN is a 10-digit number, in the format NPA- NXX-XXXX, that uniquely identifies a switch or point of interconnection (POI).
+	 * The NPA-NXX portion of the LRN is used to route calls to numbers that have been ported.
+	 */
+	public static class Dest_addr_np_information extends OptionalParameter.OctetString {
+		public Dest_addr_np_information(byte[] value) {
+			super(Tag.DEST_ADDR_NP_INFORMATION.code, value);
+		}
+	}
+
+	/**
+	 * The dest_addr_np_country TLV is used to carry E.164 information relating to the operator country code.
+	 *
+	 * 1 to 5 digits
+	 * Country code of the origination operator (E.164 Region Code)
+	 */
+	public static class Dest_addr_np_country extends OptionalParameter.OctetString {
+		public Dest_addr_np_country(byte[] value) {
+			super(Tag.DEST_ADDR_NP_COUNTRY.code, value);
+		}
+	}
+
 	/**
 	 * The display_time parameter is used to associate a display time of the short message on the MS. <br>
 	 * <br>
 	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
 	 *
+	 * @author stefanth
 	 */
 	public static class Display_time extends OptionalParameter.Byte {
 
@@ -1983,13 +2260,13 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The sms_signal parameter is used to provide a TDMA MS with alert tone information
-	 * associated with the received short message. <br>
-	 * <br>
-	 * Encoded as per [CMT-136] <br>
-	 * <br>
-	 * Wireless Network Technology: TDMA
-	 * @author stefanth
+	 * associated with the received short message.
 	 *
+	 * Encoded as per [CMT-136]
+	 *
+	 * Wireless Network Technology: TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Sms_signal extends OptionalParameter.Short {
 
@@ -2004,17 +2281,17 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The ms_validity parameter is used to provide an MS with validity information associated with
-	 * the received short message. <br>
-	 * <br>
-	 * 0 = Store Indefinitely (default) <br>
-	 * 1 = Power Down <br>
-	 * 2 = SID based registration area <br>
-	 * 3 = Display Only <br>
-	 * values 4 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA, TDMA
-	 * @author stefanth
+	 * the received short message.
 	 *
+	 * 0 = Store Indefinitely (default)
+	 * 1 = Power Down
+	 * 2 = SID based registration area
+	 * 3 = Display Only
+	 * values 4 to 255 are reserved
+	 *
+	 * Wireless Network Technology: CDMA, TDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Ms_validity extends OptionalParameter.Byte {
 
@@ -2029,18 +2306,18 @@ public abstract class OptionalParameter {
 	
 	/**
 	 * The alert_on_message_delivery parameter is set to instruct a MS to alert the user (in a MS
-	 * implementation specific manner) when the short message arrives at the MS. <br>
-	 * <br>
-	 * If length of value part is 0, then the default setting is assumed. <br>
-	 * 0 = Use mobile default alert (Default) <br>
-	 * 1 = Use low-priority alert <br>
-	 * 2 = Use medium-priority alert <br>
-	 * 3 = Use high-priority alert <br>
-	 * values 4 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA
-	 * @author stefanth
+	 * implementation specific manner) when the short message arrives at the MS.
 	 *
+	 * If length of value part is 0, then the default setting is assumed.
+	 * 0 = Use mobile default alert (Default)
+	 * 1 = Use low-priority alert
+	 * 2 = Use medium-priority alert
+	 * 3 = Use high-priority alert
+	 * values 4 to 255 are reserved
+	 *
+	 * Wireless Network Technology: CDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Alert_on_message_delivery extends OptionalParameter.Byte {
 		
@@ -2056,22 +2333,22 @@ public abstract class OptionalParameter {
 	/**
 	 * The its_reply_type parameter is a required parameter for the CDMA Interactive Teleservice as
 	 * defined by the Korean PCS carriers [KORITS]. It indicates and controls the MS user's reply
-	 * method to an SMS delivery message received from the ESME. <br>
-	 * <br>
-	 * 0 = Digit <br>
-	 * 1 = Number <br>
-	 * 2 = Telephone No. <br>
-	 * 3 = Password <br>
-	 * 4 = Character Line <br>
-	 * 5 = Menu <br>
-	 * 6 = Date <br>
-	 * 7 = Time <br>
-	 * 8 = Continue <br>
-	 * values 9 to 255 are reserved <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA
-	 * @author stefanth
+	 * method to an SMS delivery message received from the ESME.
 	 *
+	 * 0 = Digit
+	 * 1 = Number
+	 * 2 = Telephone No.
+	 * 3 = Password
+	 * 4 = Character Line
+	 * 5 = Menu
+	 * 6 = Date
+	 * 7 = Time
+	 * 8 = Continu
+	 * values 9 to 255 are reserved
+	 *
+	 * Wireless Network Technology: CDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Its_reply_type extends OptionalParameter.Byte {
 
@@ -2087,22 +2364,22 @@ public abstract class OptionalParameter {
 	/**
 	 * The its_session_info parameter is a required parameter for the CDMA Interactive Teleservice
 	 * as defined by the Korean PCS carriers [KORITS]. It contains control information for the
-	 * interactive session between an MS and an ESME. <br>
-	 * <br>
-	 * Bits 7...............0 <br>
-	 * SSSS SSSS (octet 1) <br>
-	 * NNNN NNNE (octet 2) <br>
+	 * interactive session between an MS and an ESME.
+	 *
+	 * Bits 7...............0
+	 * SSSS SSSS (octet 1)
+	 * NNNN NNNE (octet 2)
 	 * Octet 1 contains the session number (0 - 255) encoded in binary. The session
 	 * number remains constant for each session. The sequence number of the dialogue unit
 	 * (as assigned by the ESME) within the session is encoded in bits 7..1 of octet 2.
 	 * The End of Session Indicator indicates the message is the end of the conversation
-	 * session and is encoded in bit 0 of octet 2 as follows: <br>
-	 * 0 = End of Session Indicator inactive. <br>
-	 * 1 = End of Session Indicator active. <br>
-	 * <br>
-	 * Wireless Network Technology: CDMA
-	 * @author stefanth
+	 * session and is encoded in bit 0 of octet 2 as follows:
+	 * 0 = End of Session Indicator inactive.
+	 * 1 = End of Session Indicator active.
 	 *
+	 * Wireless Network Technology: CDMA
+	 *
+	 * @author stefanth
 	 */
 	public static class Its_session_info extends OptionalParameter.Short {
 
@@ -2114,17 +2391,16 @@ public abstract class OptionalParameter {
 			super(Tag.ITS_SESSION_INFO.code, content);
 		}
 	}
-	
-	
+
 	/**
 	 * The vendor_specific_source_msc_addr parameter is used to indicate the source MSC address 
-	 * over which the message originated. 
-	 * @author stefanth
+	 * over which the message originated.
 	 *
+	 * @author stefanth
 	 */
 	public static class Vendor_specific_source_msc_addr extends OptionalParameter.Vendor_specific_msc_addr {
 		
-		public Vendor_specific_source_msc_addr(byte value[]) {
+		public Vendor_specific_source_msc_addr(byte[] value) {
 			super(Tag.VENDOR_SPECIFIC_SOURCE_MSC_ADDR.code, value);
 		}
 	}
@@ -2132,13 +2408,13 @@ public abstract class OptionalParameter {
 	/**
 	 * The vendor_specific_dest_msc_addr parameter is used to indicate the destination MSC address 
 	 * over which the message terminated. This parameter can be present in deliver_sm messages 
-	 * containing delivery notifications. 
-	 * @author stefanth
+	 * containing delivery notifications.
 	 *
+	 * @author stefanth
 	 */
 	public static class Vendor_specific_dest_msc_addr extends OptionalParameter.Vendor_specific_msc_addr {
 		
-		public Vendor_specific_dest_msc_addr(byte value[]) {
+		public Vendor_specific_dest_msc_addr(byte[] value) {
 			super(Tag.VENDOR_SPECIFIC_DEST_MSC_ADDR.code, value);
 		}
 	}
@@ -2146,12 +2422,13 @@ public abstract class OptionalParameter {
 	private static class Vendor_specific_msc_addr extends OptionalParameter.OctetString {
 		String address;
 		
-		private Vendor_specific_msc_addr(short tag, byte value[]) {
+		private Vendor_specific_msc_addr(short tag, byte[] value) {
 			super(tag, value);
 			try {
-				address = new String(value, 2, value.length-2, "ISO-8859-1");
-			} catch (UnsupportedEncodingException e) {
-				// TODO: do something better
+        if (value.length >= 2) {
+          address = new String(value, 2, value.length - 2, StandardCharsets.ISO_8859_1);
+        }
+			} catch (StringIndexOutOfBoundsException e) {
 				e.printStackTrace();
 			}
 		}
@@ -2170,15 +2447,47 @@ public abstract class OptionalParameter {
 		}
 	}
 
+	/**
+	 * The congestion_state parameter is used to pass congestion status information between ESME and MC
+	 * as a means of providing flow control and congestion avoidance capabilities to the sending peer.
+	 * The TLV can be used in any SMPP operation response PDU as a means of passing congestion status from one peer to another.
+	 * Typical uses of this would be in submit_sm/submit_sm_resp sequences where an ESME would drive a batch of submissions
+	 * at a high rate and use continual tracking of the returned congestion_state values as a means of gauging the congestion.
+	 * Reaction to a variation in congestion_state would involve increasing/decreasing the rate as required to maintain the balance
+	 * in the Optimum range.
+	 *
+	 * 0 = Idle
+	 * 1-29 = Low Load
+	 * 30-49 = Medium Load
+	 * 50-79 = High Load
+	 * 80-89 = Optimum Load
+	 * 90-99 = Nearing Congestion
+	 * 100 = Congested / Maximum Load
+	 *
+	 * Introduced in SMPP 5.0
+	 *
+	 * @author pmoerenhout
+	 * @since 3.0
+	 */
+	public static class Congestion_state extends OptionalParameter.Byte {
+
+		public Congestion_state(byte value) {
+			super(Tag.CONGESTION_STATE, value);
+		}
+
+		public Congestion_state(byte[] content) {
+			super(Tag.CONGESTION_STATE.code, content);
+		}
+	}
+
     /**
-     * Is all the defined SMPP Optional Parameters.
+     * All the defined SMPP Optional Parameters.
      * 
      * @author mikko.koponen
      * @author uudashr
-     *
+		 * @author pmoerenhout
      */
     public enum Tag {
-        
         DEST_ADDR_SUBUNIT(0x0005, Dest_addr_subunit.class),
         DEST_NETWORK_TYPE(0x0006, Dest_network_type.class),
         DEST_BEARER_TYPE(0x0007, Dest_bearer_type.class), 
@@ -2197,12 +2506,12 @@ public abstract class OptionalParameter {
         DEST_SUBADDRESS(0x0203, Dest_subaddress.class), 
         USER_MESSAGE_REFERENCE(0x0204, User_message_reference.class), 
         USER_RESPONSE_CODE(0x0205, User_response_code.class), 
-        SOURCE_PORT(0x020A, Source_port.class), 
-        DESTINATION_PORT(0x020B, Destination_port.class), 
-        SAR_MSG_REF_NUM(0x020C, Sar_msg_ref_num.class), 
-        LANGUAGE_INDICATOR(0x020D, Language_indicator.class), 
-        SAR_TOTAL_SEGMENTS(0x020E, Sar_total_segments.class), 
-        SAR_SEGMENT_SEQNUM(0x020F, Sar_segment_seqnum.class), 
+        SOURCE_PORT(0x020a, Source_port.class),
+        DESTINATION_PORT(0x020b, Destination_port.class),
+        SAR_MSG_REF_NUM(0x020c, Sar_msg_ref_num.class),
+        LANGUAGE_INDICATOR(0x020d, Language_indicator.class),
+        SAR_TOTAL_SEGMENTS(0x020e, Sar_total_segments.class),
+        SAR_SEGMENT_SEQNUM(0x020f, Sar_segment_seqnum.class),
         SC_INTERFACE_VERSION(0x0210, Sc_interface_version.class), 
         CALLBACK_NUM_PRES_IND(0x0302, Callback_num_pres_ind.class), 
         CALLBACK_NUM_ATAG(0x0303, Callback_num_atag.class), 
@@ -2215,13 +2524,32 @@ public abstract class OptionalParameter {
         MESSAGE_PAYLOAD(0x0424, Message_payload.class),
         DELIVERY_FAILURE_REASON(0x0425, Delivery_failure_reason.class), 
         MORE_MESSAGES_TO_SEND(0x0426, More_messages_to_send.class), 
-        MESSAGE_STATE(0x0427, Message_state.class), 
-        USSD_SERVICE_OP(0x0501, Ussd_service_op.class), 
-        BILLING_IDENTIFICATION(0x060B, Billing_identification.class),
-        DISPLAY_TIME(0x1201, Display_time.class), 
+        MESSAGE_STATE(0x0427, Message_state.class),
+			  CONGESTION_STATE(0x0428, Congestion_state.class),
+        USSD_SERVICE_OP(0x0501, Ussd_service_op.class),
+        BROADCAST_CHANNEL_INDICATOR(0x0600, Broadcast_channel_indicator.class),
+        BROADCAST_CONTENT_TYPE(0x0601, Broadcast_content_type.class),
+        BROADCAST_CONTENT_TYPE_INFO(0x0602, Broadcast_content_type_info.class),
+        BROADCAST_MESSAGE_CLASS(0x0603, Broadcast_message_class.class),
+        BROADCAST_REP_NUM(0x0604, Broadcast_rep_num.class),
+        BROADCAST_FREQUENCY_INTERVAL(0x0605, Broadcast_frequency_interval.class),
+        BROADCAST_AREA_IDENTIFIER(0x0606, Broadcast_area_identifier.class),
+        BROADCAST_ERROR_STATUS(0x0607, Broadcast_error_status.class),
+        BROADCAST_AREA_SUCCESS(0x0608, Broadcast_area_success.class),
+        BROADCAST_END_TIME(0x0609, Broadcast_end_time.class),
+        BROADCAST_SERVICE_GROUP(0x060a, Broadcast_service_group.class),
+			  BILLING_IDENTIFICATION(0x060b, Billing_identification.class),
+        SOURCE_NETWORK_ID(0x060d, Source_network_id.class),
+        DEST_NETWORK_ID(0x060e, Dest_network_id.class),
+        SOURCE_NODE_ID(0x060f, Source_node_id.class),
+        DEST_NODE_ID(0x0610, Dest_node_id.class),
+        DEST_ADDR_NP_RESOLUTION(0x0611, Dest_addr_np_resolution.class),
+        DEST_ADDR_NP_INFORMATION(0x0612, Dest_addr_np_information.class),
+        DEST_ADDR_NP_COUNTRY(0x0613, Dest_addr_np_country.class),
+        DISPLAY_TIME(0x1201, Display_time.class),
         SMS_SIGNAL(0x1203, Sms_signal.class), 
         MS_VALIDITY(0x1204, Ms_validity.class), 
-        ALERT_ON_MESSAGE_DELIVERY(0x130C, Alert_on_message_delivery.class), 
+        ALERT_ON_MESSAGE_DELIVERY(0x130c, Alert_on_message_delivery.class),
         ITS_REPLY_TYPE(0x1380, Its_reply_type.class), 
         ITS_SESSION_INFO(0x1383, Its_session_info.class),
         VENDOR_SPECIFIC_SOURCE_MSC_ADDR(0x1501, Vendor_specific_source_msc_addr.class),
@@ -2230,26 +2558,15 @@ public abstract class OptionalParameter {
         private final short code;
         final Class<? extends OptionalParameter> type;
 
-        private Tag(int code, Class<? extends OptionalParameter> type) {
+         Tag(int code, Class<? extends OptionalParameter> type) {
             this.code = (short)code;
             this.type = type;
         }
-        
+
         /**
          * Get the tag code of the {@link Tag}.
          * 
-         * @returns the tag code.
-         * @deprecated use {@link #code()}
-         */
-        @Deprecated
-        public short value() {
-            return code;
-        }
-        
-        /**
-         * Get the tag code of the {@link Tag}.
-         * 
-         * @returns the tag code.
+         * @return the tag code.
          */
         public short code() {
             return code;
@@ -2267,26 +2584,21 @@ public abstract class OptionalParameter {
             return null;
         }
     }
-    
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + tag;
-        return result;
-    }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        OptionalParameter other = (OptionalParameter)obj;
-        if (tag != other.tag)
-            return false;
-        return true;
-    }
+	  @Override
+	  public int hashCode() {
+		    return Objects.hash(tag);
+	  }
+
+	  @Override
+	  public boolean equals(final Object o) {
+		  if (this == o) {
+			  return true;
+		  }
+		  if (!(o instanceof OptionalParameter)) {
+			  return false;
+		  }
+		  final OptionalParameter that = (OptionalParameter) o;
+		  return tag == that.tag;
+	  }
 }

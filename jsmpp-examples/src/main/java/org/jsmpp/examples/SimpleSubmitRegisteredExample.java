@@ -30,63 +30,66 @@ import org.jsmpp.extra.NegativeResponseException;
 import org.jsmpp.extra.ResponseTimeoutException;
 import org.jsmpp.session.BindParameter;
 import org.jsmpp.session.SMPPSession;
+import org.jsmpp.session.SubmitSmResult;
 import org.jsmpp.util.AbsoluteTimeFormatter;
 import org.jsmpp.util.TimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author uudashr
  *
  */
 public class SimpleSubmitRegisteredExample {
-    private static TimeFormatter timeFormatter = new AbsoluteTimeFormatter();;
+    private static final Logger log = LoggerFactory.getLogger(SimpleSubmitRegisteredExample.class);
+    private static final TimeFormatter TIME_FORMATTER = new AbsoluteTimeFormatter();
     
     public static void main(String[] args) {
         SMPPSession session = new SMPPSession();
         // Set listener to receive deliver_sm
         session.setMessageReceiverListener(new MessageReceiverListenerImpl());
         
-        
         try {
-            session.connectAndBind("localhost", 8056, new BindParameter(BindType.BIND_TRX, "test", "test", "cp", TypeOfNumber.UNKNOWN, NumberingPlanIndicator.UNKNOWN, null));
+            String systemId = session.connectAndBind("localhost", 8056, new BindParameter(BindType.BIND_TRX, "test", "test", "cp", TypeOfNumber.UNKNOWN, NumberingPlanIndicator.UNKNOWN, null));
+            log.info("Connected with SMSC with system id {}", systemId);
+
+            try {
+                SubmitSmResult submitSmResult = session.submitShortMessage("CMT",
+                    TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616",
+                    TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657",
+                    new ESMClass(), (byte)0, (byte)1,  TIME_FORMATTER.format(new Date()), null,
+                    new RegisteredDelivery(SMSCDeliveryReceipt.SUCCESS_FAILURE), (byte)0, DataCodings.ZERO, (byte)0, "jSMPP simplify SMPP on Java platform".getBytes());
+
+                String messageId = submitSmResult.getMessageId();
+                /*
+                 * you can save the submitted message to database.
+                 */
+                log.info("Message submitted, message_id is {}", messageId);
+                Thread.sleep(2000);
+            } catch (PDUException e) {
+                // Invalid PDU parameter
+                log.error("Invalid PDU parameter", e);
+            } catch (ResponseTimeoutException e) {
+                // Response timeout
+                log.error("Response timeout", e);
+            } catch (InvalidResponseException e) {
+                // Invalid response
+                log.error("Receive invalid response", e);
+            } catch (NegativeResponseException e) {
+                // Receiving negative response (non-zero command_status)
+                log.error("Receive negative response", e);
+            } catch (IOException e) {
+                log.error("I/O error occurred", e);
+            } catch (InterruptedException e) {
+                log.error("Thread interrupted", e);
+            }
+
+            session.unbindAndClose();
+
         } catch (IOException e) {
-            System.err.println("Failed connect and bind to host");
-            e.printStackTrace();
+            log.error("Failed connect and bind to host", e);
         }
-        
-        try {
-            String messageId = session.submitShortMessage("CMT", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "1616", TypeOfNumber.INTERNATIONAL, NumberingPlanIndicator.UNKNOWN, "628176504657", new ESMClass(), (byte)0, (byte)1,  timeFormatter.format(new Date()), null, new RegisteredDelivery(SMSCDeliveryReceipt.SUCCESS_FAILURE), (byte)0, DataCodings.ZERO, (byte)0, "jSMPP simplify SMPP on Java platform".getBytes());
-            
-            /*
-             * you can save the submitted message to database.
-             */
-            
-            System.out.println("Message submitted, message_id is " + messageId);
-            Thread.sleep(2000);
-        } catch (PDUException e) {
-            // Invalid PDU parameter
-            System.err.println("Invalid PDU parameter");
-            e.printStackTrace();
-        } catch (ResponseTimeoutException e) {
-            // Response timeout
-            System.err.println("Response timeout");
-            e.printStackTrace();
-        } catch (InvalidResponseException e) {
-            // Invalid response
-            System.err.println("Receive invalid respose");
-            e.printStackTrace();
-        } catch (NegativeResponseException e) {
-            // Receiving negative response (non-zero command_status)
-            System.err.println("Receive negative response");
-            e.printStackTrace();
-        } catch (IOException e) {
-            System.err.println("IO error occur");
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            System.err.println("Thread interrupted");
-            e.printStackTrace();
-        }
-        
-        session.unbindAndClose();
+
     }
     
     

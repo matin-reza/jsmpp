@@ -1,21 +1,23 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.bean;
 
+import java.util.Objects;
+
 /**
- * Message Waiting DataCoding is a data coding for message waiting.
+ * Message Waiting DataCoding is a DataCoding implementation for message waiting.
  * 
  * @author uudashr
  * 
@@ -39,18 +41,16 @@ public class MessageWaitingDataCoding implements DataCoding {
     }
 
     /**
-     * Construct with specified indication sense, indication type and the
-     * alphabet.
+     * Construct with specified indication sense, indication type and the alphabet.
      * <p>
      * Possible alphabet is {@link Alphabet#ALPHA_DEFAULT},
      * {@link Alphabet#ALPHA_8_BIT} &amp; <code>null</code>, others will cause
      * construction thrown an {@link IllegalArgumentException}. If the alphabet
      * is set to <code>null</code> it means that the user message may discard.
-     * </p>
-     * 
+     *
      * @param indicationSense is the indication sense.
      * @param indicationType is the indication type.
-     * @param alphabet
+     * @param alphabet the Alphabet
      * @throws IllegalArgumentException if alphabet is null or alphabet non one
      *         of {@link Alphabet#ALPHA_DEFAULT} and
      *         {@link Alphabet#ALPHA_8_BIT}.
@@ -58,12 +58,13 @@ public class MessageWaitingDataCoding implements DataCoding {
     public MessageWaitingDataCoding(IndicationSense indicationSense,
             IndicationType indicationType, Alphabet alphabet)
             throws IllegalArgumentException {
-        if (alphabet != null && (alphabet.equals(Alphabet.ALPHA_8_BIT)
-                || alphabet.equals(Alphabet.ALPHA_RESERVED))) {
+        if (alphabet != null && (alphabet.isUnspecified()
+                || alphabet.isReserved())) {
             throw new IllegalArgumentException(
-                    "Supported alphabet for SimpleDataCoding is "
-                            + Alphabet.ALPHA_DEFAULT + " or "
-                            + Alphabet.ALPHA_8_BIT + " only. Current alphabet is " + alphabet);
+                    "Supported alphabet for SimpleDataCoding is one of "
+                            + Alphabet.ALPHA_DEFAULT + ", "
+                            + Alphabet.ALPHA_UNSPECIFIED_2 + " or " + Alphabet.ALPHA_8_BIT
+                            + " only. Current alphabet is " + alphabet);
         }
         this.indicationSense = indicationSense;
         this.indicationType = indicationType;
@@ -81,9 +82,8 @@ public class MessageWaitingDataCoding implements DataCoding {
     }
 
     /**
-     * Get the alphabet. Alphabet may <code>null</code>, that means
-     * {@link #isStoreMessage()} value is
-     * <code>false<code> and user message may discard.
+     * Get the alphabet. Alphabet may {@code null}, that means {@link #isStoreMessage()} value
+     * is {@code false} and user message may discard.
      * 
      * @return the alphabet. This value is nullable.
      */
@@ -124,47 +124,24 @@ public class MessageWaitingDataCoding implements DataCoding {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-                + ((alphabet == null) ? 0 : alphabet.hashCode());
-        result = prime * result
-                + ((indicationSense == null) ? 0 : indicationSense.hashCode());
-        result = prime * result
-                + ((indicationType == null) ? 0 : indicationType.hashCode());
-        return result;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MessageWaitingDataCoding)) {
+            return false;
+        }
+        final MessageWaitingDataCoding that = (MessageWaitingDataCoding) o;
+        return indicationSense == that.indicationSense && indicationType == that.indicationType && alphabet == that.alphabet;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        MessageWaitingDataCoding other = (MessageWaitingDataCoding)obj;
-        if (alphabet == null) {
-            if (other.alphabet != null)
-                return false;
-        } else if (!alphabet.equals(other.alphabet))
-            return false;
-        if (indicationSense == null) {
-            if (other.indicationSense != null)
-                return false;
-        } else if (!indicationSense.equals(other.indicationSense))
-            return false;
-        if (indicationType == null) {
-            if (other.indicationType != null)
-                return false;
-        } else if (!indicationType.equals(other.indicationType))
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(indicationSense, indicationType, alphabet);
     }
-    
+
     @Override
     public String toString() {
-        return "DataCoding:" + (0xff & toByte());
+        return "DataCoding:" + (toByte() & 0xff);
     }
 }

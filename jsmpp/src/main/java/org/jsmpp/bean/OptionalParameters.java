@@ -1,16 +1,16 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.bean;
 
@@ -26,67 +26,75 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author uudashr
+ * @author pmoerenhout
  *
  */
 public class OptionalParameters {
-    
-    private static final Logger logger = LoggerFactory.getLogger(OptionalParameters.class);
+
+    public static final OptionalParameter[] EMPTY_OPTIONAL_PARAMETERS = new OptionalParameter[]{};
+
+    private static final Logger log = LoggerFactory.getLogger(OptionalParameters.class);
+
+    private OptionalParameters() {
+        throw new InstantiationError("This class must not be instantiated");
+    }
+
     /**
      * Create SAR_MESSAGE_REF_NUM TLV instance.
-     * 
+     *
      * @param value is the value.
      * @return the optional parameter.
      */
     public static OptionalParameter.Short newSarMsgRefNum(short value) {
         return new OptionalParameter.Short(Tag.SAR_MSG_REF_NUM, value);
     }
-    
+
     /**
      * Create SAR_MESSAGE_REF_NUM TLV instance.
      * The value will cast automatically into short type.
-     * 
+     *
      * @param value is the value.
      * @return the optional parameter.
      */
     public static OptionalParameter.Short newSarMsgRefNum(int value) {
         return newSarMsgRefNum((byte)value);
     }
-    
+
     /**
      * Create SAR_SEGMENT_SEQNUM TLV instance.
-     * 
+     *
      * @param value is the value.
      * @return the optional parameter.
      */
     public static OptionalParameter.Byte newSarSegmentSeqnum(byte value) {
         return new OptionalParameter.Byte(Tag.SAR_SEGMENT_SEQNUM, value);
     }
-    
+
     /**
      * Create SAR_SEGMENT_SEQNUM TLV instance.
      * The value will cast automatically into byte type.
-     * 
+     *
      * @param value is the value.
      * @return the optional parameter.
      */
     public static OptionalParameter.Byte newSarSegmentSeqnum(int value) {
         return newSarSegmentSeqnum((byte)value);
     }
-    
+
     /**
      * Create SAR_TOTAL_SEGMENTS TLV instance.
-     * 
+     *
      * @param value is the value.
      * @return the optional parameter.
      */
     public static OptionalParameter.Byte newSarTotalSegments(byte value) {
         return new OptionalParameter.Byte(Tag.SAR_TOTAL_SEGMENTS, value);
     }
-    
+
     /**
      * Create SAR_TOTAL_SEGMENTS TLV instance.
      * The value will cast automatically into byte type.
-     * 
+     *
      * @param value is the value.
      * @return the optional parameter.
      */
@@ -97,18 +105,18 @@ public class OptionalParameters {
     /**
      * Deserialize all recognized tag code to {@link OptionalParameter} object.
      * Unrecognized will be classified as {@link COctetString}.
-     * 
+     *
      * @param tagCode is the tag code.
      * @param content is the content.
      * @return the OptionalParameter object.
      */
     public static OptionalParameter deserialize(short tagCode, byte[] content) {
         Tag tag = Tag.valueOf(tagCode);
-        if(tag == null) {
-            logger.warn("Optional Parameter Tag not recognized for deserialization: " + tagCode);
-            return new COctetString(tagCode, content);
+        if (tag == null) {
+            log.debug("Optional Parameter Tag not recognized for deserialization: {}", tagCode);
+            return new OctetString(tagCode, content);
         }
-        
+
         switch(tag)
         {
             case DEST_ADDR_SUBUNIT:
@@ -185,10 +193,48 @@ public class OptionalParameters {
             	return new OptionalParameter.More_messages_to_send(content);
             case MESSAGE_STATE:
                 return new OptionalParameter.Message_state(content);
+            case CONGESTION_STATE:
+                return new OptionalParameter.Congestion_state(content);
             case USSD_SERVICE_OP:
             	return new OptionalParameter.Ussd_service_op(content);
+            case BROADCAST_CHANNEL_INDICATOR:
+                return new OptionalParameter.Broadcast_channel_indicator(content);
+            case BROADCAST_CONTENT_TYPE:
+                return new OptionalParameter.Broadcast_content_type(content);
+            case BROADCAST_CONTENT_TYPE_INFO:
+                return new OptionalParameter.Broadcast_content_type_info(content);
+            case BROADCAST_MESSAGE_CLASS:
+                return new OptionalParameter.Broadcast_message_class(content);
+            case BROADCAST_REP_NUM:
+                return new OptionalParameter.Broadcast_rep_num(content);
+            case BROADCAST_FREQUENCY_INTERVAL:
+                return new OptionalParameter.Broadcast_frequency_interval(content);
+            case BROADCAST_AREA_IDENTIFIER:
+                return new OptionalParameter.Broadcast_area_identifier(content);
+            case BROADCAST_ERROR_STATUS:
+                return new OptionalParameter.Broadcast_error_status(content);
+            case BROADCAST_AREA_SUCCESS:
+                return new OptionalParameter.Broadcast_area_success(content);
+            case BROADCAST_END_TIME:
+                return new OptionalParameter.Broadcast_end_time(content);
+            case BROADCAST_SERVICE_GROUP:
+                return new OptionalParameter.Broadcast_service_group(content);
             case BILLING_IDENTIFICATION:
             	return new OptionalParameter.Billing_identification(content);
+            case SOURCE_NETWORK_ID:
+                return new OptionalParameter.Source_network_id(content);
+            case DEST_NETWORK_ID:
+                return new OptionalParameter.Dest_network_id(content);
+            case SOURCE_NODE_ID:
+                return new OptionalParameter.Source_node_id(content);
+            case DEST_NODE_ID:
+                return new OptionalParameter.Dest_node_id(content);
+            case DEST_ADDR_NP_RESOLUTION:
+                return new OptionalParameter.Dest_addr_np_resolution(content);
+            case DEST_ADDR_NP_INFORMATION:
+                return new OptionalParameter.Dest_addr_np_information(content);
+            case DEST_ADDR_NP_COUNTRY:
+                return new OptionalParameter.Dest_addr_np_country(content);
             case DISPLAY_TIME:
             	return new OptionalParameter.Display_time(content);
             case SMS_SIGNAL:
@@ -206,11 +252,11 @@ public class OptionalParameters {
             case VENDOR_SPECIFIC_DEST_MSC_ADDR:
                 return new OptionalParameter.Vendor_specific_dest_msc_addr(content);
             default:
-                logger.warn("Missing code in deserialize to handle Optional Parameter Tag: " + tag);
+                log.warn("Missing code in deserialize to handle Optional Parameter Tag: {}", tag);
         }
 
         // fallback
-        logger.warn("Falling back to basic OptionalParameter types for " + tag);
+        log.warn("Falling back to basic OptionalParameter types for {}", tag);
         if (Null.class.isAssignableFrom(tag.type)) {
             return new Null(tagCode);
         }
@@ -235,23 +281,25 @@ public class OptionalParameters {
     @SuppressWarnings("unchecked")
     public static <U extends OptionalParameter> U get(Class<U> tagClass, OptionalParameter[] parameters)
     {
-        for(OptionalParameter i: parameters) {
-            if(i.getClass() == tagClass) {
-                return (U)i;
+        if (parameters != null) {
+          for (OptionalParameter i : parameters) {
+            if (i.getClass() == tagClass) {
+              return (U) i;
             }
+          }
         }
-        logger.info("optional tag " + tagClass + " not found");
         return null;
     }
 
     public static OptionalParameter get(short tag, OptionalParameter[] parameters)
     {
-        for(OptionalParameter i: parameters) {
-            if(i.tag == tag) {
-                return i;
+        if (parameters != null) {
+          for (OptionalParameter i : parameters) {
+            if (i.tag == tag) {
+              return i;
             }
+          }
         }
-        logger.info("optional tag " + tag + " not found");
         return null;
     }
 }

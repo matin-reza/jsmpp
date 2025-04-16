@@ -1,23 +1,23 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.extra;
 
+import static org.testng.Assert.fail;
+
 import org.jsmpp.InvalidResponseException;
 import org.jsmpp.bean.Command;
-import static org.testng.Assert.*;
-
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -30,7 +30,7 @@ public class PendingResponseTest {
     
     @BeforeMethod
     public void setUp() throws Exception {
-        pendingResponse = new PendingResponse<Command>(1000);
+        pendingResponse = new PendingResponse<>(1000);
     }
     
     /**
@@ -53,20 +53,16 @@ public class PendingResponseTest {
         try {
             notifyDone(90, pendingResponse);
             pendingResponse.waitDone();
-        } catch (ResponseTimeoutException e) {
-            fail("Should be done with valid response");
-        } catch (InvalidResponseException e) {
+        } catch (ResponseTimeoutException | InvalidResponseException e) {
             fail("Should be done with valid response");
         }
     }
-    
-    
+
     @Test(groups="checkintest")
     public void testDoneWithInvalidResponse() {
         try {
             notifyInvalidResponse(90, pendingResponse);
             pendingResponse.waitDone();
-            System.out.println("DONE");
             fail("Should throw InvalidResponseException");
         } catch (ResponseTimeoutException e) {
             fail("Should throw InvalidResponseException");
@@ -76,7 +72,7 @@ public class PendingResponseTest {
     
     /**
      * Notify done of a pendingResponse on specified interval.
-     * 
+     *
      * @param timemillis is interval in millisecond.
      * @param pendingResponse is the pending response.
      */
@@ -89,6 +85,9 @@ public class PendingResponseTest {
                     Thread.sleep(timemillis);
                     pendingResponse.done(new Command());
                 } catch (InterruptedException e) {
+                    //re-interrupt the current thread
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
                 }
             }
         }.start();
@@ -96,7 +95,7 @@ public class PendingResponseTest {
     
     /**
      * Notify invalid response of a pendingResponse on specified interval.
-     * 
+     *
      * @param timemillis is interval in millisecond.
      * @param pendingResponse is the pending response.
      */
@@ -110,8 +109,9 @@ public class PendingResponseTest {
                     pendingResponse.doneWithInvalidResponse(
                             new InvalidResponseException("Invalid response message"));
                 } catch (InterruptedException e) {
+                    //re-interrupt the current thread
+                    Thread.currentThread().interrupt();
                 }
-                
             }
         }.start();
     }

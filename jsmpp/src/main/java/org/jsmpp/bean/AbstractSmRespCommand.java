@@ -14,6 +14,9 @@
  */
 package org.jsmpp.bean;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * @author uudashr
  * 
@@ -22,6 +25,8 @@ public class AbstractSmRespCommand extends Command {
     private static final long serialVersionUID = 4829782792374754685L;
     
     private String messageId;
+    // SMPP 5.0 added optionalParameters
+    private OptionalParameter[] optionalParameters;
 
     public AbstractSmRespCommand() {
         super();
@@ -41,31 +46,43 @@ public class AbstractSmRespCommand extends Command {
         this.messageId = messageId;
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result
-                + ((messageId == null) ? 0 : messageId.hashCode());
-        return result;
+    public <U extends OptionalParameter> U getOptionalParameter(Class<U> tagClass)
+    {
+        return OptionalParameters.get(tagClass, optionalParameters);
+    }
+
+    public OptionalParameter getOptionalParameter(OptionalParameter.Tag tagEnum)
+    {
+        return OptionalParameters.get(tagEnum.code(), optionalParameters);
+    }
+
+    public OptionalParameter[] getOptionalParameters() {
+        return optionalParameters;
+    }
+
+    public void setOptionalParameters(OptionalParameter[] optionalParameters) {
+        this.optionalParameters = optionalParameters;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!(o instanceof AbstractSmRespCommand)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (!super.equals(o)) {
             return false;
-        final AbstractSmRespCommand other = (AbstractSmRespCommand)obj;
-        if (messageId == null) {
-            if (other.messageId != null)
-                return false;
-        } else if (!messageId.equals(other.messageId))
-            return false;
-        return true;
+        }
+        final AbstractSmRespCommand that = (AbstractSmRespCommand) o;
+        return Objects.equals(messageId, that.messageId) && Arrays.equals(optionalParameters, that.optionalParameters);
     }
-    
-    
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(super.hashCode(), messageId);
+        result = 31 * result + Arrays.hashCode(optionalParameters);
+        return result;
+    }
 }

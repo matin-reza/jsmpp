@@ -1,16 +1,16 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.session;
 
@@ -29,15 +29,14 @@ import org.slf4j.LoggerFactory;
  */
 public class PDUProcessServerTask implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(PDUProcessServerTask.class);
-    
+
     private final Command pduHeader;
     private final byte[] pdu;
     private final SMPPServerSessionState stateProcessor;
     private final ActivityNotifier activityNotifier;
     private final ServerResponseHandler responseHandler;
     private final Runnable onIOExceptionTask;
-    
-    
+
     public PDUProcessServerTask(Command pduHeader, byte[] pdu,
             SMPPServerSessionState stateProcessor,
             ActivityNotifier activityNotifier,
@@ -50,15 +49,20 @@ public class PDUProcessServerTask implements Runnable {
         this.onIOExceptionTask = onIOExceptionTask;
     }
 
+    @Override
     public void run() {
         try {
-        	if(logger.isDebugEnabled()) 
-        	{
-                String hexmsg = HexUtil.convertBytesToHexString(pdu, 0, pdu.length, " ");
-        		logger.debug("Received SMPP message {} {}", pduHeader, hexmsg);
-        	}
-        	
-            switch (pduHeader.getCommandId()) {
+            int commandId = pduHeader.getCommandId();
+            if (commandId == SMPPConstant.CID_ENQUIRE_LINK
+                || commandId == SMPPConstant.CID_ENQUIRE_LINK_RESP) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Received PDU {}", HexUtil.convertBytesToHexString(pdu, 0, pdu.length));
+                }
+            } else if (logger.isDebugEnabled()) {
+                logger.debug("Received PDU {}", HexUtil.convertBytesToHexString(pdu, 0, pdu.length));
+            }
+
+            switch (commandId) {
             case SMPPConstant.CID_BIND_RECEIVER:
             case SMPPConstant.CID_BIND_TRANSMITTER:
             case SMPPConstant.CID_BIND_TRANSCEIVER:
@@ -117,11 +121,29 @@ public class PDUProcessServerTask implements Runnable {
                 activityNotifier.notifyActivity();
                 stateProcessor.processUnbindResp(pduHeader, pdu, responseHandler);
                 break;
+            case SMPPConstant.CID_BROADCAST_SM:
+                activityNotifier.notifyActivity();
+                stateProcessor.processBroadcastSm(pduHeader, pdu, responseHandler);
+                break;
+            case SMPPConstant.CID_CANCEL_BROADCAST_SM:
+                activityNotifier.notifyActivity();
+                stateProcessor.processCancelBroadcastSm(pduHeader, pdu, responseHandler);
+                break;
+            case SMPPConstant.CID_QUERY_BROADCAST_SM:
+                activityNotifier.notifyActivity();
+                stateProcessor.processQueryBroadcastSm(pduHeader, pdu, responseHandler);
+                break;
+
             default:
                 stateProcessor.processUnknownCid(pduHeader, pdu, responseHandler);
             }
         } catch (IOException e) {
+            logger.info("I/O exception: {}", e.getMessage());
             onIOExceptionTask.run();
         }
+    }
+
+    protected Command getPduHeader() {
+        return pduHeader;
     }
 }

@@ -17,7 +17,7 @@ package org.jsmpp.bean;
 import org.jsmpp.SMPPConstant;
 
 /**
- * Enum represent the interface version of SMPP.
+ * Enum represent the SMPP interface version.
  * 
  * @author uudashr
  * @version 1.0
@@ -25,6 +25,10 @@ import org.jsmpp.SMPPConstant;
  * 
  */
 public enum InterfaceVersion {
+    /**
+     * Interface Version for legacy SMPP.
+     */
+    IF_00(SMPPConstant.IF_VERSION_00),
     /**
      * Interface Version for SMPP version 3.3.
      */
@@ -42,12 +46,12 @@ public enum InterfaceVersion {
 
     private byte value;
 
-    private InterfaceVersion(byte value) {
+    InterfaceVersion(byte value) {
         this.value = value;
     }
 
     /**
-     * Get the value of interface version as defined on SMPP spesification.
+     * Get the value of interface version as defined in SMPP specification.
      * 
      * @return the value of interface version.
      */
@@ -56,12 +60,12 @@ public enum InterfaceVersion {
     }
 
     /**
-     * Get the <tt>InterfaceVersion</tt> by specified value.
+     * Get the {@code InterfaceVersion} by specified value.
      * 
      * @param value is the value associated by the enum constant.
-     * @return the enum const assiciated with specified <tt>value</tt>.
-     * @throws IllegalArgumentException if there is <tt>InterfaceVersion</tt>
-     *         associated with specified <tt>value</tt>.
+     * @return the enum const associated with specified {@code value}.
+     * @throws IllegalArgumentException if there is {@code InterfaceVersion}
+     *         associated with specified {@code value}.
      */
     public static InterfaceVersion valueOf(byte value)
             throws IllegalArgumentException {
@@ -72,5 +76,18 @@ public enum InterfaceVersion {
 
         throw new IllegalArgumentException(
                 "No enum const InterfaceVersion with value " + value);
+    }
+
+    /**
+     * Get the minimum {@code InterfaceVersion} supported by both sides.
+     *
+     * @param a The other interface version.
+     * @return the {@code InterfaceVersion} supported by both sides.
+     */
+    public InterfaceVersion min(InterfaceVersion a) {
+        if (a == null) {
+            return this;
+        }
+        return (a.ordinal() <= this.ordinal()) ? a : this;
     }
 }

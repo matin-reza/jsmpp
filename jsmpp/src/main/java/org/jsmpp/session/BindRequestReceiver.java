@@ -29,21 +29,21 @@ import org.jsmpp.bean.Bind;
 class BindRequestReceiver {
     private final Lock lock = new ReentrantLock();
     private final Condition requestCondition = lock.newCondition();
-    private final ServerResponseHandler responseHandler;
+    private final GenericServerResponseHandler responseHandler;
     private BindRequest request;
     private boolean alreadyWaitForRequest;
     
-    public BindRequestReceiver(ServerResponseHandler responseHandler) {
+    BindRequestReceiver(GenericServerResponseHandler responseHandler) {
         this.responseHandler = responseHandler;
     }
     
     /**
      * Wait until the bind request received for specified timeout.
      * 
-     * @param timeout is the timeout.
+     * @param timeout is the timeout in milliseconds.
      * @return the {@link BindRequest}.
      * @throws IllegalStateException if this method already called before.
-     * @throws TimeoutException if the timeout has been reach.
+     * @throws TimeoutException if the timeout has been reached.
      */
     BindRequest waitForRequest(long timeout) throws IllegalStateException, TimeoutException {
         lock.lock();
@@ -53,27 +53,27 @@ class BindRequestReceiver {
             } else if (request == null) {
                 try {
                     requestCondition.await(timeout, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) { }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
             
             if (request != null) {
                 return request;
             } else {
-                throw new TimeoutException("Wating for bind request take time too long");
+                throw new TimeoutException("No bind request after " + timeout + "ms");
             }
         } finally {
             alreadyWaitForRequest = true;
             lock.unlock();
         }
-        
-        
     }
     
     /**
      * Notify that the bind has accepted.
      * 
      * @param bindParameter is the {@link Bind} command.
-     * @throws IllegalStateException if this method already called before.
+     * @throws IllegalStateException if this method is already called before.
      */
     void notifyAcceptBind(Bind bindParameter) throws IllegalStateException {
         lock.lock();

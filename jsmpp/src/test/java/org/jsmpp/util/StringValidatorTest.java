@@ -1,24 +1,26 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.util;
 
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
+
+import java.nio.charset.StandardCharsets;
+
 import org.jsmpp.PDUStringException;
-import org.jsmpp.util.StringParameter;
-import org.jsmpp.util.StringValidator;
-import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
@@ -69,7 +71,7 @@ public class StringValidatorTest {
     }
 
     @Test(groups="checkintest")
-    public void validateStringOctedStringWithString() throws Exception {
+    public void validateStringOctetStringWithString() throws Exception {
         StringValidator.validateString("", StringParameter.SHORT_MESSAGE);
         StringValidator.validateString("short messages", StringParameter.SHORT_MESSAGE);
         String shortMessage = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567"
@@ -78,7 +80,7 @@ public class StringValidatorTest {
         StringValidator.validateString(shortMessage, StringParameter.SHORT_MESSAGE);
 
         try {
-            shortMessage = shortMessage + "5";
+            shortMessage += "5";
             StringValidator.validateString(shortMessage, StringParameter.SHORT_MESSAGE);
             fail("PDUStringException expected");
         } catch (PDUStringException e) {
@@ -89,17 +91,17 @@ public class StringValidatorTest {
     }
 
     @Test(groups="checkintest")
-    public void validateStringOctedStringWithByteArray() throws Exception {
-        StringValidator.validateString("".getBytes("UTF-8"), StringParameter.SHORT_MESSAGE);
-        StringValidator.validateString("short messages".getBytes("UTF-8"), StringParameter.SHORT_MESSAGE);
+    public void validateStringOctetStringWithByteArray() throws Exception {
+        StringValidator.validateString("".getBytes(StandardCharsets.UTF_8), StringParameter.SHORT_MESSAGE);
+        StringValidator.validateString("short messages".getBytes(StandardCharsets.UTF_8), StringParameter.SHORT_MESSAGE);
         String shortMessage = "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567"
             + "89012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901"
             + "234567890123456789012345678901234567890123456789012345678901234";
-        StringValidator.validateString(shortMessage.getBytes("UTF-8"), StringParameter.SHORT_MESSAGE);
+        StringValidator.validateString(shortMessage.getBytes(StandardCharsets.UTF_8), StringParameter.SHORT_MESSAGE);
 
         try {
             shortMessage = shortMessage + "5";
-            StringValidator.validateString(shortMessage.getBytes("UTF-8"), StringParameter.SHORT_MESSAGE);
+            StringValidator.validateString(shortMessage.getBytes(StandardCharsets.UTF_8), StringParameter.SHORT_MESSAGE);
             fail("PDUStringException expected");
         } catch (PDUStringException e) {
             // expected
@@ -109,7 +111,7 @@ public class StringValidatorTest {
     }
 
     @Test(groups="checkintest")
-    public void validateStringCOctedStringWithString() throws Exception {
+    public void validateStringCOctetStringWithString() throws Exception {
         StringValidator.validateString("", StringParameter.SYSTEM_ID);
         StringValidator.validateString("System ID", StringParameter.SYSTEM_ID);
         StringValidator.validateString("123456789012345", StringParameter.SYSTEM_ID);
@@ -125,13 +127,13 @@ public class StringValidatorTest {
     }
 
     @Test(groups="checkintest")
-    public void validateStringCOctedStringWithByteArray() throws Exception {
-        StringValidator.validateString("".getBytes("UTF-8"), StringParameter.SYSTEM_ID);
-        StringValidator.validateString("System ID".getBytes("UTF-8"), StringParameter.SYSTEM_ID);
-        StringValidator.validateString("123456789012345".getBytes("UTF-8"), StringParameter.SYSTEM_ID);
+    public void validateStringCOctetStringWithByteArray() throws Exception {
+        StringValidator.validateString("".getBytes(StandardCharsets.UTF_8), StringParameter.SYSTEM_ID);
+        StringValidator.validateString("System ID".getBytes(StandardCharsets.UTF_8), StringParameter.SYSTEM_ID);
+        StringValidator.validateString("123456789012345".getBytes(StandardCharsets.UTF_8), StringParameter.SYSTEM_ID);
 
         try {
-            StringValidator.validateString("1234567890123456".getBytes("UTF-8"), StringParameter.SYSTEM_ID);
+            StringValidator.validateString("1234567890123456".getBytes(StandardCharsets.UTF_8), StringParameter.SYSTEM_ID);
             fail("PDUStringException expected");
         } catch (PDUStringException e) {
             // expected
@@ -141,7 +143,7 @@ public class StringValidatorTest {
     }
     
     @Test(groups="checkintest")
-    public void validateStringCOctedStringWithStringAndWithoutARange() throws Exception {
+    public void validateStringCOctetStringWithStringAndWithoutARange() throws Exception {
         StringValidator.validateString("", StringParameter.SCHEDULE_DELIVERY_TIME);
         StringValidator.validateString("020610233429000R", StringParameter.SCHEDULE_DELIVERY_TIME);
 
@@ -156,12 +158,12 @@ public class StringValidatorTest {
     }
     
     @Test(groups="checkintest")
-    public void validateStringCOctedStringWithByteArrayAndWithoutARange() throws Exception {
-        StringValidator.validateString("".getBytes("UTF-8"), StringParameter.SCHEDULE_DELIVERY_TIME);
-        StringValidator.validateString("020610233429000R".getBytes("UTF-8"), StringParameter.SCHEDULE_DELIVERY_TIME);
+    public void validateStringCOctetStringWithByteArrayAndWithoutARange() throws Exception {
+        StringValidator.validateString("".getBytes(StandardCharsets.UTF_8), StringParameter.SCHEDULE_DELIVERY_TIME);
+        StringValidator.validateString("020610233429000R".getBytes(StandardCharsets.UTF_8), StringParameter.SCHEDULE_DELIVERY_TIME);
 
         try {
-            StringValidator.validateString("020610233429000RX".getBytes("UTF-8"), StringParameter.SCHEDULE_DELIVERY_TIME);
+            StringValidator.validateString("020610233429000RX".getBytes(StandardCharsets.UTF_8), StringParameter.SCHEDULE_DELIVERY_TIME);
             fail("PDUStringException expected");
         } catch (PDUStringException e) {
             // expected

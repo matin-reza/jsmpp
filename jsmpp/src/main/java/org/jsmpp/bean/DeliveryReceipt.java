@@ -2,31 +2,31 @@
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.bean;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 
 import org.jsmpp.util.DeliveryReceiptState;
 import org.jsmpp.util.InvalidDeliveryReceiptException;
-
 
 /**
  * @author uudashr
  *
  */
-public class DeliveryReceipt {
+public class DeliveryReceipt implements DeliveryReceiptInterface<DeliveryReceiptState> {
     // attributes of delivery receipt
     public static final String DELREC_ID = "id";
     public static final String DELREC_SUB = "sub";
@@ -40,12 +40,11 @@ public class DeliveryReceipt {
     /**
      * Date format for the <b>submit date</b> and <b>done date</b> attribute
      */
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat(
-            "yyMMddHHmm");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyMMddHHmm");
 
     private String id;
-    private int submitted;
-    private int delivered;
+    private Integer submitted;
+    private Integer delivered;
     private Date submitDate;
     private Date doneDate;
     private DeliveryReceiptState finalStatus;
@@ -55,33 +54,30 @@ public class DeliveryReceipt {
     public DeliveryReceipt() {
     }
 
-    public DeliveryReceipt(String formattedDelieryReceipt)
+    public DeliveryReceipt(String formattedDeliveryReceipt)
             throws InvalidDeliveryReceiptException {
         /*
          * id:IIIIIIIIII sub:SSS dlvrd:DDD submit date:YYMMDDhhmm done
          * date:YYMMDDhhmm stat:DDDDDDD err:E Text: ..........
          */
         try {
-            id = getDeliveryReceiptValue(DeliveryReceipt.DELREC_ID, formattedDelieryReceipt);
-            submitted = Integer.parseInt(getDeliveryReceiptValue(
-                    DeliveryReceipt.DELREC_SUB, formattedDelieryReceipt));
-            delivered = Integer.parseInt(getDeliveryReceiptValue(
-                    DeliveryReceipt.DELREC_DLVRD, formattedDelieryReceipt));
+            id = getDeliveryReceiptValue(DeliveryReceipt.DELREC_ID, formattedDeliveryReceipt);
+            submitted = getDeliveryReceiptIntValue(DeliveryReceipt.DELREC_SUB, formattedDeliveryReceipt);
+            delivered = getDeliveryReceiptIntValue(DeliveryReceipt.DELREC_DLVRD, formattedDeliveryReceipt);
             submitDate = string2Date(getDeliveryReceiptValue(
-                    DeliveryReceipt.DELREC_SUBMIT_DATE, formattedDelieryReceipt));
+                    DeliveryReceipt.DELREC_SUBMIT_DATE, formattedDeliveryReceipt));
             doneDate = string2Date(getDeliveryReceiptValue(
-                    DeliveryReceipt.DELREC_DONE_DATE, formattedDelieryReceipt));
+                    DeliveryReceipt.DELREC_DONE_DATE, formattedDeliveryReceipt));
             finalStatus = DeliveryReceiptState
                     .getByName(getDeliveryReceiptValue(
-                            DeliveryReceipt.DELREC_STAT, formattedDelieryReceipt));
-            error = getDeliveryReceiptValue(DeliveryReceipt.DELREC_ERR, formattedDelieryReceipt);
-            text = getDeliveryReceiptTextValue(formattedDelieryReceipt);
+                        DeliveryReceipt.DELREC_STAT, formattedDeliveryReceipt));
+            error = getDeliveryReceiptValue(DeliveryReceipt.DELREC_ERR, formattedDeliveryReceipt);
+            text = getDeliveryReceiptTextValue(formattedDeliveryReceipt);
         } catch (Exception e) {
-            throw new InvalidDeliveryReceiptException(
-                    "There is an error found when parsing delivery receipt", e);
+            throw new InvalidDeliveryReceiptException("There is an error found when parsing delivery receipt", e);
         }
     }
-    
+
     public DeliveryReceipt(String id, int submitted, int delivered,
             Date submitDate, Date doneDate, DeliveryReceiptState finalStatus,
             String error, String text) {
@@ -217,181 +213,75 @@ public class DeliveryReceipt {
         }
     }
 
+    @Override
     public String toString() {
         /*
          * id:IIIIIIIIII sub:SSS dlvrd:DDD submit date:YYMMDDhhmm done
          * date:YYMMDDhhmm stat:DDDDDDD err:E Text: . . . . . . . . .
          */
-        StringBuffer sBuf = new StringBuffer(120);
-        sBuf.append(DELREC_ID + ":" + id);
-        sBuf.append(" ");
-        sBuf.append(DELREC_SUB + ":" + intToString(submitted, 3));
-        sBuf.append(" ");
-        sBuf.append(DELREC_DLVRD + ":" + intToString(delivered, 3));
-        sBuf.append(" ");
-        sBuf.append(DELREC_SUBMIT_DATE + ":" + dateFormat.format(submitDate));
-        sBuf.append(" ");
-        sBuf.append(DELREC_DONE_DATE + ":" + dateFormat.format(doneDate));
-        sBuf.append(" ");
-        sBuf.append(DELREC_STAT + ":" + finalStatus);
-        sBuf.append(" ");
-        sBuf.append(DELREC_ERR + ":" + error);
-        sBuf.append(" ");
-        sBuf.append(DELREC_TEXT.toLowerCase() + ":" + text);
-        return sBuf.toString();
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-                + ((dateFormat == null) ? 0 : dateFormat.hashCode());
-        result = prime * result + delivered;
-        result = prime * result
-                + ((doneDate == null) ? 0 : doneDate.hashCode());
-        result = prime * result + ((error == null) ? 0 : error.hashCode());
-        result = prime * result
-                + ((finalStatus == null) ? 0 : finalStatus.hashCode());
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result
-                + ((submitDate == null) ? 0 : submitDate.hashCode());
-        result = prime * result + submitted;
-        result = prime * result + ((text == null) ? 0 : text.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        final DeliveryReceipt other = (DeliveryReceipt)obj;
-        if (!hasEqualId(other)) {
-            return false;
-        }
-        if (submitted != other.submitted) {
-            return false;
-        }
-        if (delivered != other.delivered) {
-            return false;
-        }
-        if (!hasEqualSubmitDate(other)) {
-            return false;
-        }
-        if (!hasEqualDoneDate(other)) {
-            return false;
-        }
-        if (!hasEqualFinalStatus(other)) {
-            return false;
-        }
-        if (!hasEqualError(other)) {
-            return false;
-        }
-        if (!hasEqualText(other)) {
-            return false;
-        }
-        return true;
+        StringBuilder stringBuilder = new StringBuilder(120);
+        stringBuilder.append(DELREC_ID + ":" + id)
+                     .append(" ")
+                     .append(DELREC_SUB + ":" + intToString(submitted, 3))
+                     .append(" ")
+                     .append(DELREC_DLVRD + ":" + intToString(delivered, 3))
+                     .append(" ")
+                     .append(DELREC_SUBMIT_DATE + ":" + dateFormat.format(submitDate))
+                     .append(" ")
+                     .append(DELREC_DONE_DATE + ":" + dateFormat.format(doneDate))
+                     .append(" ")
+                     .append(DELREC_STAT + ":" + finalStatus)
+                     .append(" ")
+                     .append(DELREC_ERR + ":" + error)
+                     .append(" ")
+                     .append(DELREC_TEXT.toLowerCase() + ":" + text);
+        return stringBuilder.toString();
     }
 
     /**
      * Create String representation of integer. Preceding 0 will be add as
      * needed.
-     * 
+     *
      * @param value is the value.
      * @param digit is the digit should be shown.
      * @return the String representation of int value.
      */
     private static String intToString(int value, int digit) {
-        StringBuffer sBuf = new StringBuffer(digit);
-        sBuf.append(Integer.toString(value));
-        while (sBuf.length() < digit) {
-            sBuf.insert(0, "0");
+        StringBuilder stringBuilder = new StringBuilder(digit);
+        stringBuilder.append(value);
+        while (stringBuilder.length() < digit) {
+            stringBuilder.insert(0, "0");
         }
-        return sBuf.toString();
+        return stringBuilder.toString();
     }
 
-    private boolean hasEqualId(DeliveryReceipt other) {
-        if (id == null) {
-            if (other.id != null) {
-                return false;
-            }
-        }
-        return id.equals(other.id);
-    }
-
-    private boolean hasEqualDoneDate(DeliveryReceipt other) {
-        if (doneDate == null) {
-            if (other.doneDate != null) {
-                return false;
-            }
-        }
-        return doneDate.equals(other.doneDate);
-    }
-
-    private boolean hasEqualError(DeliveryReceipt other) {
-        if (error == null) {
-            if (other.error != null) {
-                return false;
-            }
-        }
-        return error.equals(other.error);
-    }
-
-    private boolean hasEqualFinalStatus(DeliveryReceipt other) {
-        if (finalStatus == null) {
-            if (other.finalStatus != null) {
-                return false;
-            }
-        }
-        return finalStatus.equals(other.finalStatus);
-    }
-
-    private boolean hasEqualSubmitDate(DeliveryReceipt other) {
-        if (submitDate == null) {
-            if (other.submitDate != null) {
-                return false;
-            }
-        }
-        return submitDate.equals(other.submitDate);
-    }
-
-    private boolean hasEqualText(DeliveryReceipt other) {
-        if (text == null) {
-            if (other.text != null) {
-                return false;
-            }
-        }
-        return text.equals(other.text);
-    }
-    
     /**
      * Get the delivery receipt attribute value.
-     * 
+     *
      * @param attrName is the attribute name.
      * @param source the original source id:IIIIIIIIII sub:SSS dlvrd:DDD submit
      *        date:YYMMDDhhmm done date:YYMMDDhhmm stat:DDDDDDD err:E
      *        Text:....................
-     * @return the value of specified attribute.
-     * @throws IndexOutOfBoundsException
+     * @return the value of specified attribute
      */
-    private static String getDeliveryReceiptValue(String attrName, String source)
-            throws IndexOutOfBoundsException {
+    private static String getDeliveryReceiptValue(String attrName, String source) {
         String tmpAttr = attrName + ":";
         int startIndex = source.indexOf(tmpAttr);
-        if (startIndex < 0)
+        if (startIndex < 0) {
             return null;
+        }
         startIndex = startIndex + tmpAttr.length();
         int endIndex = source.indexOf(" ", startIndex);
-        if (endIndex > 0)
+        if (endIndex > 0) {
             return source.substring(startIndex, endIndex);
+        }
         return source.substring(startIndex);
     }
-    
+
     /**
+     * Converts the date string to a {@link Date} object.
+     *
+     * <p>
      * YYMMDDhhmm where:
      * <ul>
      * <li>YY = last two digits of the year (00-99)</li>
@@ -400,29 +290,34 @@ public class DeliveryReceipt {
      * <li>hh = hour (00-23)</li>
      * <li>mm = minute (00-59)</li>
      * </ul>
-     * 
+     *
      * Java format is (yyMMddHHmm).
-     * 
-     * @param date in <tt>String</tt> format.
-     * @return
-     * @throws NumberFormatException if there is contains non number on
-     *         <code>date</code> parameter.
-     * @throws IndexOutOfBoundsException if the date length in <tt>String</tt>
+     *
+     * @param date in {@code String} with YYMMDDhhmm format.
+     * @return the Date object
+     * @throws NumberFormatException if {@code date} parameter contains non-number.
+     * @throws IndexOutOfBoundsException if the date length in {@code }String}
      *         format is less than 10.
      */
     private static Date string2Date(String date) {
-
+        if (date == null) {
+          return null;
+        }
         int year = Integer.parseInt(date.substring(0, 2));
         int month = Integer.parseInt(date.substring(2, 4));
         int day = Integer.parseInt(date.substring(4, 6));
         int hour = Integer.parseInt(date.substring(6, 8));
         int minute = Integer.parseInt(date.substring(8, 10));
+        int second = 0;
+        if (date.length() >= 12){
+            second = Integer.parseInt(date.substring(10, 12));
+        }
         Calendar cal = Calendar.getInstance();
-        cal.set(convertTwoDigitYear(year), month - 1, day, hour, minute, 0);
+        cal.set(convertTwoDigitYear(year), month - 1, day, hour, minute, second);
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTime();
     }
-    
+
     private static int convertTwoDigitYear(int year) {
         if (year >=0 && year <= 37) {
             return 2000 + year;
@@ -433,11 +328,10 @@ public class DeliveryReceipt {
             return year;
         }
     }
-    
+
     /**
-     * @param source
-     * @return
-     * @throws IndexOutOfBoundsException
+     * @param source The Delivery Receipt string.
+     * @return The text value in the delivery receipt.
      */
     private static String getDeliveryReceiptTextValue(String source) {
         String tmpAttr = DeliveryReceipt.DELREC_TEXT + ":";
@@ -451,5 +345,38 @@ public class DeliveryReceipt {
         }
         startIndex = startIndex + tmpAttr.length();
         return source.substring(startIndex);
+    }
+
+    private static int getDeliveryReceiptIntValue(String attrName, String formattedDeliveryReceipt){
+        String value = getDeliveryReceiptValue(attrName, formattedDeliveryReceipt);
+        if (value != null) {
+            return Integer.parseInt(value);
+        }
+        return -1;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final DeliveryReceipt that = (DeliveryReceipt) o;
+        return Objects.equals(dateFormat, that.dateFormat) &&
+            Objects.equals(id, that.id) &&
+            Objects.equals(submitted, that.submitted) &&
+            Objects.equals(delivered, that.delivered) &&
+            Objects.equals(submitDate, that.submitDate) &&
+            Objects.equals(doneDate, that.doneDate) &&
+            finalStatus == that.finalStatus &&
+            Objects.equals(error, that.error) &&
+            Objects.equals(text, that.text);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dateFormat, id, submitted, delivered, submitDate, doneDate, finalStatus, error, text);
     }
 }

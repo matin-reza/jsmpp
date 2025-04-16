@@ -39,12 +39,12 @@ import org.jsmpp.extra.ResponseTimeoutException;
  * 
  */
 public interface ServerSession {
-    
+
     /**
      * Submit a short message to specified destination address (ESME). This method will
      * blocks until response received or timeout reached. This method simplify
      * operations of sending DELIVER_SM command and receiving the DELIVER_SM_RESP.
-     * 
+     *
      * @param serviceType is the service_type.
      * @param sourceAddrTon is the source_addr_ton.
      * @param sourceAddrNpi is the source_addr_npi.
@@ -53,7 +53,7 @@ public interface ServerSession {
      * @param destAddrNpi is the dest_addr_npi.
      * @param destinationAddr is the destination_addr.
      * @param esmClass is the esm_class.
-     * @param protocoId is the protocol_id.
+     * @param protocolId is the protocol_id.
      * @param priorityFlag is the priority_flag.
      * @param registeredDelivery is the registered_delivery.
      * @param dataCoding is the data_coding.
@@ -68,7 +68,7 @@ public interface ServerSession {
     void deliverShortMessage(String serviceType, TypeOfNumber sourceAddrTon,
             NumberingPlanIndicator sourceAddrNpi, String sourceAddr,
             TypeOfNumber destAddrTon, NumberingPlanIndicator destAddrNpi,
-            String destinationAddr, ESMClass esmClass, byte protocoId,
+            String destinationAddr, ESMClass esmClass, byte protocolId,
             byte priorityFlag, RegisteredDelivery registeredDelivery,
             DataCoding dataCoding, byte[] shortMessage,
             OptionalParameter... optionalParameters) throws PDUException,
@@ -79,7 +79,6 @@ public interface ServerSession {
      * Send alert notification to ESME in order to notify the particular mobile
      * subscriber has become available.
      * 
-     * @param sequenceNumber is the sequence_number.
      * @param sourceAddrTon is the source_addr_ton.
      * @param sourceAddrNpi is the source_addr_npi.
      * @param sourceAddr is the source_addr.
@@ -93,11 +92,11 @@ public interface ServerSession {
      * @throws NegativeResponseException if negative response received.
      * @throws IOException if there is an I/O error found.
      */
-    void alertNotification(int sequenceNumber, TypeOfNumber sourceAddrTon,
+    void alertNotification(TypeOfNumber sourceAddrTon,
             NumberingPlanIndicator sourceAddrNpi, String sourceAddr,
             TypeOfNumber esmeAddrTon, NumberingPlanIndicator esmeAddrNpi,
             String esmeAddr, OptionalParameter... optionalParameters)
-            throws PDUStringException, ResponseTimeoutException,
+            throws PDUException, ResponseTimeoutException,
             InvalidResponseException, NegativeResponseException, IOException;
 
 }

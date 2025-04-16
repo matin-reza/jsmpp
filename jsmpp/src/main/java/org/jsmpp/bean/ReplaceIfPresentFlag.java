@@ -14,16 +14,16 @@
  */
 package org.jsmpp.bean;
 
+import java.util.Objects;
+
 /**
  * @author uudashr
- * 
+ *
  */
 public class ReplaceIfPresentFlag {
-    public static final ReplaceIfPresentFlag DEFAULT = new ReplaceIfPresentFlag(
-            0);
+    public static final ReplaceIfPresentFlag DEFAULT = new ReplaceIfPresentFlag(0);
     public static final ReplaceIfPresentFlag DONT_REPLACE = DEFAULT;
-    public static final ReplaceIfPresentFlag REPLACE = new ReplaceIfPresentFlag(
-            1);
+    public static final ReplaceIfPresentFlag REPLACE = new ReplaceIfPresentFlag(1);
 
     private byte value;
 
@@ -40,21 +40,20 @@ public class ReplaceIfPresentFlag {
     }
 
     @Override
-    public int hashCode() {
-        return 1;
+    public boolean equals(final Object o) {
+
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ReplaceIfPresentFlag)) {
+            return false;
+        }
+        final ReplaceIfPresentFlag that = (ReplaceIfPresentFlag) o;
+        return value == that.value;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        final ReplaceIfPresentFlag other = (ReplaceIfPresentFlag)obj;
-        if (value != other.value)
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(value);
     }
 }

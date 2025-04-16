@@ -1,63 +1,74 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.bean;
 
 
+import java.util.Objects;
+
 /**
- * This General Data Coding. 
- * 
- * @author uudashr
+ * General Data Coding implements {@link DataCoding}
  *
+ * SMPP 3.3 uses the GSM 03.38 SMS DCS. For SMPP 3.4 and later,
+ * the data_coding is preferable only used for character code settings. These are the values 0x00 till 0x0f,
+ * whereby some overlap exists with the GSM, TDMA and CDMA defined values.
+ *
+ * @author uudashr
  */
 public class GeneralDataCoding implements DataCoding {
     public static final GeneralDataCoding DEFAULT = new GeneralDataCoding();
-    
-    private final boolean compressed;
+
     private final Alphabet alphabet;
     private final MessageClass messageClass;
-    
+    private final boolean compressed;
+
     public GeneralDataCoding() {
         this(Alphabet.ALPHA_DEFAULT);
     }
 
+    /**
+     * Used when using the SMPP 3.4/5.0 DCS for character set only.
+     *
+     * @param alphabet is the alphabet
+     *
+     */
     public GeneralDataCoding(Alphabet alphabet) {
         this(alphabet, null);
     }
-    
-    public GeneralDataCoding(Alphabet alphabet, ESMClass esmClass) {
-        this(alphabet, null, false);
+
+    public GeneralDataCoding(Alphabet alphabet, MessageClass messageClass) {
+        this(alphabet, messageClass, false);
     }
 
     /**
      * Construct the GeneralDataCoding with specified alphabet, messageClass and
      * compression flag.
-     * 
-     * @param alphabet is the alphabet.
+     *
+     * @param alphabet is the alphabet
      * @param messageClass is the message class. This is nullable. If
-     *        <code>null</code> means the DataCoding doesn't has meaning
+     *        <code>null</code> means the DataCoding doesn't have meaning
      *        MessageClass.
-     * @param compressed is the compression flag. Value is
-     *        <code>true</tt> if the user message is compressed, otherwise set to <code>false</code>.
-     * 
-     * @throws IllegalArgumentException if the alphabet is <code>null</code>,
-     *         since Alphabet is mandatory.
+     * @param compressed is the compression flag. Value is {@code true} if the user message is compressed, otherwise set to {@code false}.
+     * @throws IllegalArgumentException if the alphabet is {@code null}, since alphabet is mandatory.
      */
     public GeneralDataCoding(Alphabet alphabet, MessageClass messageClass,
             boolean compressed) throws IllegalArgumentException {
         if (alphabet == null) {
-            throw new IllegalArgumentException("alphabet is mandatory, can't be null");
+            throw new IllegalArgumentException("Alphabet is mandatory, can't be null");
+        }
+        if (messageClass != null && (alphabet != Alphabet.ALPHA_DEFAULT && alphabet != Alphabet.ALPHA_8_BIT && alphabet != Alphabet.ALPHA_UCS2 && alphabet != Alphabet.ALPHA_RESERVED_12)) {
+            throw new IllegalArgumentException("Alphabet is not supported, only default, 8-bit, UCS-2 are allowed with message class specified");
         }
         this.alphabet = alphabet;
         this.messageClass = messageClass;
@@ -80,50 +91,33 @@ public class GeneralDataCoding implements DataCoding {
         byte value = compressed ? DataCodingFactory00xx.MASK_COMPRESSED : 0;
         value |= alphabet.value();
         if (messageClass != null) {
-            value |= DataCodingFactory00xx.MASK_CONTAIN_MESSAGE_CLASS;
+            value |= DataCodings.MASK_CONTAIN_MESSAGE_CLASS;
             value |= messageClass.value();
         }
         return value;
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-                + ((alphabet == null) ? 0 : alphabet.hashCode());
-        result = prime * result + (compressed ? 1231 : 1237);
-        result = prime * result
-                + ((messageClass == null) ? 0 : messageClass.hashCode());
-        return result;
+    public String toString() {
+        return "DataCoding:" + (toByte() & 0xff);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
-        if (obj == null)
+        }
+        if (!(o instanceof GeneralDataCoding)) {
             return false;
-        if (getClass() != obj.getClass())
-            return false;
-        GeneralDataCoding other = (GeneralDataCoding)obj;
-        if (alphabet == null) {
-            if (other.alphabet != null)
-                return false;
-        } else if (!alphabet.equals(other.alphabet))
-            return false;
-        if (compressed != other.compressed)
-            return false;
-        if (messageClass == null) {
-            if (other.messageClass != null)
-                return false;
-        } else if (!messageClass.equals(other.messageClass))
-            return false;
-        return true;
+        }
+        final GeneralDataCoding that = (GeneralDataCoding) o;
+        return compressed == that.compressed &&
+            alphabet == that.alphabet &&
+            messageClass == that.messageClass;
     }
-    
+
     @Override
-    public String toString() {
-        return "DataCoding:" + (0xff & toByte());
+    public int hashCode() {
+        return Objects.hash(compressed, alphabet, messageClass);
     }
 }

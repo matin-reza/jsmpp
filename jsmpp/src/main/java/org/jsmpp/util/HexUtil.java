@@ -1,16 +1,16 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 package org.jsmpp.util;
 
@@ -29,6 +29,10 @@ public class HexUtil {
     private static final char[] hexChar = { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
+    private HexUtil() {
+        throw new InstantiationError("This class must not be instantiated");
+    }
+
     /**
      * Convert the string to hex string value.
      * 
@@ -36,7 +40,20 @@ public class HexUtil {
      * @return the hex string representation of string.
      */
     public static String convertStringToHexString(String data) {
-        return conventBytesToHexString(data.getBytes());
+        return convertBytesToHexString(data.getBytes());
+    }
+
+    /**
+     * Convert byte to hex string.
+     *
+     * @param data is the byte.
+     * @return the hex string representation of the byte.
+     */
+    public static String convertByteToHexString(byte data) {
+        StringBuilder stringBuilder = new StringBuilder(2);
+        stringBuilder.append(hexChar[(data >> 4) & 0x0f]);
+        stringBuilder.append(hexChar[data & 0x0f]);
+        return stringBuilder.toString();
     }
 
     /**
@@ -45,11 +62,10 @@ public class HexUtil {
      * @param data is the bytes.
      * @return the hex string representation of bytes.
      */
-    public static String conventBytesToHexString(byte[] data) {
+    public static String convertBytesToHexString(byte[] data) {
         return convertBytesToHexString(data, 0, data.length);
     }
 
-    // 
     /**
      * Convert bytes to hex string value (using Big-Endian rule).
      * 
@@ -62,15 +78,14 @@ public class HexUtil {
             int length) {
         return convertBytesToHexString(data, offset, length, "");
     }
-    public static String convertBytesToHexString(byte[] data, int offset,
-            int length, String byteDelimiter) {
-        StringBuffer sBuf = new StringBuffer((length-offset)*(2+byteDelimiter.length()));
+    public static String convertBytesToHexString(byte[] data, int offset, int length, String byteDelimiter) {
+        final StringBuilder stringBuilder = new StringBuilder((length-offset)*(2+byteDelimiter.length()));
         for (int i = offset; i < length; i++) {
-            sBuf.append(hexChar[(data[i] >> 4) & 0xf]);
-            sBuf.append(hexChar[data[i] & 0xf]);
-            sBuf.append(byteDelimiter);
+            stringBuilder.append(hexChar[(data[i] >> 4) & 0x0f]);
+            stringBuilder.append(hexChar[data[i] & 0x0f]);
+            stringBuilder.append(byteDelimiter);
         }
-        return sBuf.toString();
+        return stringBuilder.toString();
     }
 
     /**
@@ -81,12 +96,12 @@ public class HexUtil {
      */
     public static String convertHexStringToString(String hexString) {
         String uHexString = hexString.toLowerCase();
-        StringBuffer sBuf = new StringBuffer();
+        StringBuilder sBld = new StringBuilder();
         for (int i = 0; i < uHexString.length(); i = i + 2) {
             char c = (char)Integer.parseInt(uHexString.substring(i, i + 2), 16);
-            sBuf.append(c);
+            sBld.append(c);
         }
-        return sBuf.toString();
+        return sBld.toString();
     }
 
     /**
@@ -130,9 +145,6 @@ public class HexUtil {
             data[j++] |= (byte)(Arrays.binarySearch(hexChar, tmp[1]) & 0xf);
         }
 
-        for (int i = realHexString.length(); i > 0; i -= 2) {
-
-        }
         return data;
     }
 }
